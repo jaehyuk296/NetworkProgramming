@@ -1,7 +1,7 @@
 # NetworkProgramming
 
 최종 폴더 구조
-DavinciCode-Network-Project/
+NetworkProgramming/
 ├── .gitignore     
 ├── README.md      (프로젝트 개요 )
 ├── server/        
