@@ -13,9 +13,9 @@
 > │   ├── GameServer.java
 > <br>
 > │   ├── GameLogic.java
-<br>
+> <br>
 > │   ├── ClientHandler.java
-<br>
+> <br>
 > │   └── Tile.java
 > <br>
 > └── client/       
@@ -26,6 +26,7 @@
 >    <br>
 > │   ├── TilePanel.java
 >    <br>
+
 ### 🎯 Commit Convention
 
 > 1. **커밋 메시지의 형식은 통일해 주세요.**
