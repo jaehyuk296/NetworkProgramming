@@ -1,30 +1,30 @@
 # NetworkProgramming
 
-최종 폴더 구조 예시
+### 최종 폴더 구조 예시
+> <br>
+> Davinci/
+> <br>
+> ├── .gitignore     
+> <br>
+> ├── README.md      (프로젝트 개요 )
+> <br>
+> ├── server/
+> <br>
+> │   ├── GameServer.java
+> <br>
+> │   ├── GameLogic.java
 <br>
-Davinci/
+> │   ├── ClientHandler.java
 <br>
-├── .gitignore     
-<br>
-├── README.md      (프로젝트 개요 )
-<br>
-├── server/
-<br>
-│   ├── GameServer.java
-<br>
-│   ├── GameLogic.java
-<br>
-│   ├── ClientHandler.java
-<br>
-│   └── Tile.java
-<br>
-└── client/       
-<br>
-    ├── GameClient.java
-    <br>
-    ├── ClientTile.java
-    <br>
-    └── TilePanel.java
+> │   └── Tile.java
+> <br>
+> └── client/       
+> <br>
+> │   ├── GameClient.java
+>    <br>
+> │   ├── ClientTile.java
+>    <br>
+> │   ├── TilePanel.java
 >    <br>
 ### 🎯 Commit Convention
 
