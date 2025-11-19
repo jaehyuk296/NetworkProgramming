@@ -45,6 +45,8 @@
 > <li> 🔀 Merge: Merge branches [:twisted_rightwards_arrows:]
 > <li> 🚀 Deploy: Deploying stuff [:rocket]
 > <li> 🚚 Rename: 파일 혹은 폴더명을 수정하거나 옮기는 작업만인 경우 [:truck]
+> <li> 🔥 Remove: 파일을 삭제하는 작업만 수행한 경우 [:fire]
+> <li> ⏪️ Revert: 전 버전으로 롤백 [:rewind]
 
 ### 1. 🔌 접속 화면 (Login)
 목표: server.txt를 읽어 서버에 연결하고 ID를 받는다.
@@ -133,6 +135,4 @@ A (방장), B, C, D 처럼 텍스트로 표시.
 [필수] 타이머: "남은 시간: 30초" (서버 시간과 싱크 안 맞아도 되니 일단 30초 카운트다운 표시).
 
 [필수] 게임 로그: "A님이 타일을 가져왔습니다", "B님이 추측에 성공했습니다" 등 서버 메시지 출력.
-  
-> <li> 🔥 Remove: 파일을 삭제하는 작업만 수행한 경우 [:fire]
-> <li> ⏪️ Revert: 전 버전으로 롤백 [:rewind]
+
