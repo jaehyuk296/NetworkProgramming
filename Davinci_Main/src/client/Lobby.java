@@ -7,6 +7,8 @@ import java.awt.Image;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.Vector;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -19,8 +21,9 @@ public class Lobby extends JPanel {
     private JLabel myInfo;
     private JTable table;
     private JScrollPane scrollPane;
+    private DefaultTableModel model;
     
-    // [수정 1] 생성자에서 LoginPanel 대신 ActionLi	tener(버튼 동작)를 받습니다.
+    // 생성자에서 LoginPanel 대신 ActionLi	tener(버튼 동작)를 받습니다.
     public Lobby(ActionListener createAction, ActionListener enterAction) {
         
         try {
@@ -42,15 +45,10 @@ public class Lobby extends JPanel {
     }
     
     /** 방 목록 테이블 */
-    private void setList() {
-        DefaultTableModel model = new DefaultTableModel(
-            new Object[][] {
-                {"1", "코난방", "2/4", "대기"},
-                {"2", "다빈치갓겜방", "4/4", "시작"},
-                {"3", "호영방", "3/4", "대기"},
-            },
-            new String[] {"방 번호", "방 제목", "인원", "상태"}
-        ) {
+   private void setList() {
+    	// 빈 데이터로 시작
+    	String[] headers = {"방 번호", "방 제목", "인원", "상태"};
+        model = new DefaultTableModel(null, headers) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // 모든 셀 수정 불가
@@ -75,7 +73,7 @@ public class Lobby extends JPanel {
 
         scrollPane = new JScrollPane(table);
 
-        // ⭐ 테이블 위치 반드시 지정해야 보임
+        // 테이블 위치 반드시 지정해야 보임
         scrollPane.setBounds(250, 250, 500, 300);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
@@ -110,9 +108,29 @@ public class Lobby extends JPanel {
         add(myInfo);
     }
 
-    // [수정 3] 로그인 성공 후 닉네임을 갱신하는 메소드 -> 미리 패널 부착해서 변경함
+    // 로그인 성공 후 닉네임을 갱신하는 메소드 -> 미리 패널 부착해서 변경함
     public void updateGreeting(String nickname) {
         myInfo.setText("안녕하세요, " + nickname + "님");
+    }
+
+    // 서버로부터 받은 새로운 방 목록으로 테이블을 갱신
+    public void updateRoomList(Vector<Vector<String>> roomData) {
+        // 1. 기존 테이블 데이터 싹 지우기
+        model.setRowCount(0); 
+
+        // 2. 새로운 데이터 채워넣기
+        if (roomData != null) {
+            for (Vector<String> row : roomData) {
+                model.addRow(row);
+            }
+        }
+    }
+    
+    // 선택된 방의 번호(ID)를 반환하는 메소드
+    public String getSelectedRoomId() {
+        int row = table.getSelectedRow();
+        if (row == -1) return null; // 선택된 행이 없음
+        return (String) table.getValueAt(row, 0); // 0번 컬럼(방 번호) 반환
     }
     
     @Override

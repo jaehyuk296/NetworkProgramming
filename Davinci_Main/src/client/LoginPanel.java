@@ -33,7 +33,7 @@ public class LoginPanel extends JPanel {
         nicknameField = new JTextField(PLACEHOLDER); // 초기 문구 설정
         nicknameField.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
         nicknameField.setHorizontalAlignment(JTextField.CENTER);
-        nicknameField.setOpaque(false);
+        nicknameField.setOpaque(false); // 배경 투명
         nicknameField.setForeground(Color.GRAY); // 안내 문구
         nicknameField.setCaretColor(Color.black);
         nicknameField.setBorder(BorderFactory.createMatteBorder(0, 0, 3, 0, Color.WHITE));

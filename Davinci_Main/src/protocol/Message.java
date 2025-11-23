@@ -12,12 +12,14 @@ public class Message implements Serializable {
 
     public static final int REQ_CREATE_ROOM = 2000; // 클라 -> 서버: "방 만들어줘 (방제목)"
     public static final int RES_CREATE_SUCCESS = 2001; // 서버 -> 클라: "방 만들어짐 (대기방으로 이동해)"
-    public static final int NOTE_ROOM_LIST = 2002;  // 서버 -> 클라: "방 목록이 갱신 (리스트 데이터)"
+    public static final int REQ_JOIN_ROOM = 2002;  // 서버 -> 클라: "방 목록이 갱신 (리스트 데이터)"
+    public static final int SRES_ROOM_LIST = 2003;  // 서버 -> 클라: "방 목록 데이터 갱신"  
 
     // --- 데이터 ---
     private int mode;       // 위 상수 중 하나
-    private Object data1;   // 보낼 데이터
-
+    private Object data1;   // (보낼 데이터 닉네임, 방제목, 방번호 등)
+    private Object payload; // 추가 데이터 (방 목록 Vector, 게임 객체 등)
+    
     public Message(int mode, Object data1) {
         this.mode = mode;
         this.data1 = data1;
@@ -27,6 +29,24 @@ public class Message implements Serializable {
         this(mode, null);
     }
 
+    public Message(int mode, Object data1, Object payload) {
+        this.mode = mode;
+        this.data1 = data1;
+        this.payload = payload;
+    }
+
     public int getMode() { return mode; }
     public Object getData1() { return data1; }
+
+    public void setData1(Object data1) {
+        this.data1 = data1;
+    }
+    // 방 목록을 꺼낼 때 이 메소드가 필요합니다.
+    public Object getPayload() {
+        return payload;
+    }
+
+    public void setPayload(Object payload) {
+        this.payload = payload;
+    }
 }
