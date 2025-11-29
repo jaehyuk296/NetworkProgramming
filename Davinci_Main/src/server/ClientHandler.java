@@ -61,9 +61,9 @@ public class ClientHandler extends Thread {
                     String title = (String) msg.getData1();
                     System.out.println("[GAME] 방 생성 요청: " + nickname + " -> " + title);
                     
-                    // [수정] Lobby.createRoom 내부에서 currentRoom 설정과 메시지 전송이 완료되도록 위임
+                    // Lobby.createRoom 내부에서 currentRoom 설정과 메시지 전송이 완료되도록 위임
                     lobby.createRoom(this, title); 
-                    
+
                     break;
 
                 case Message.REQ_JOIN_ROOM:
@@ -114,7 +114,14 @@ public class ClientHandler extends Thread {
                         lobby.addUser(this); // 로비로 돌아가서 로비 유저 목록에 다시 추가 (자동으로 방 목록 갱신 메시지 SRES_ROOM_LIST가 전송되어야 함)
                     }
                     break;
-                }
+
+                case Message.REQ_START_GAME:    // [추가] 게임 시작 요청 (방장만 가능)
+                    if (currentRoom != null) {
+                        System.out.println("[GAME] 게임 시작 요청: " + nickname);
+                        currentRoom.startGame();
+                    }
+                    break;
+                }   
             }
         } catch (Exception e) {
             System.out.println("[CONN] 연결 종료: " + nickname);

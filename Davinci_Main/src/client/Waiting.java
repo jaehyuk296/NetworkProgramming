@@ -105,7 +105,7 @@ public class Waiting extends JPanel {
         b_start.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 // 서버로 시작 요청을 보냅니다. (서버에서 최종적으로 모두 준비되었는지 확인해야 합니다.)
-                gameClient.send(new Message(Message.REQ_READY, "START"));
+                gameClient.send(new Message(Message.REQ_START_GAME)); // [수정] 프로토콜 start game 요청 사용
             }
         });
 

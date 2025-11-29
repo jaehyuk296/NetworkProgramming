@@ -21,6 +21,11 @@ public class Message implements Serializable {
     public static final int CHAT_MSG = 3002;         // 대화 메시지
     public static final int REQ_READY = 3003;        // 준비 버튼 클릭
     public static final int REQ_EXIT_ROOM = 3004;    // 방 나가기
+    public static final int REQ_START_GAME = 3005;   // 게임 시작 요청 (방장만 가능)
+
+    // 게임 전용 프로토콜
+    public static final int GAME_START = 4000;     // 서버 -> 클라: "게임 시작! (내 타일 정보 포함)"
+    public static final int TURN_START = 4001;     // 서버 -> 클라: "누구의 턴입니다"
 
     // --- 데이터 ---
     private int mode;       // 위 상수 중 하나
@@ -53,7 +58,7 @@ public class Message implements Serializable {
         return payload;
     }
 
-    public void setPayload(Object payload) {
+    public void setPayload(Object payload) {            
         this.payload = payload;
     }
 }
