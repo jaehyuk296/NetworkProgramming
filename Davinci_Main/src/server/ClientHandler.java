@@ -19,6 +19,10 @@ public class ClientHandler extends Thread {
     }
 
     public String getNickname() { return nickname; }
+    
+    public void setRoom(GameRoom room) {
+        this.currentRoom = room;
+    }
 
     public void sendMessage(Message msg) {
         try {
@@ -53,29 +57,32 @@ public class ClientHandler extends Thread {
                 msg = (Message) ois.readObject();
                 
                 switch (msg.getMode()) {
-                    case Message.REQ_CREATE_ROOM:
-                        String title = (String) msg.getData1();
-                        System.out.println("[GAME] 방 생성 요청: " + nickname + " -> " + title);
-                        lobby.createRoom(this, title);
-                        break;
+                case Message.REQ_CREATE_ROOM:
+                    String title = (String) msg.getData1();
+                    System.out.println("[GAME] 방 생성 요청: " + nickname + " -> " + title);
+                    
+                    // [수정] Lobby.createRoom 내부에서 currentRoom 설정과 메시지 전송이 완료되도록 위임
+                    lobby.createRoom(this, title); 
+                    
+                    break;
 
-                    case Message.REQ_JOIN_ROOM:
-                        int roomId = Integer.parseInt(String.valueOf(msg.getData1()));
-                        System.out.println("[GAME] 방 입장 요청: " + nickname + " -> " + roomId);
-                        
-                        GameRoom room = lobby.getRoom(roomId);
-                        if (room != null) {
-                            // 4명 꽉 찼는지 확인
-                            if (room.getUserCount() >= 4) {
-                                // 실패 메시지 전송 (필요시 구현)
-                                System.out.println("[GAME] 입장 실패 (풀방)");
-                            } else {
-                                lobby.removeUser(this); // 로비에서 제거
-                                room.enterUser(this);   // 방에 추가
-                                this.currentRoom = room; // 현재 방 기억
-                            }
+                case Message.REQ_JOIN_ROOM:
+                    int roomId = Integer.parseInt(String.valueOf(msg.getData1()));
+                    System.out.println("[GAME] 방 입장 요청: " + nickname + " -> " + roomId);
+                    
+                    GameRoom room = lobby.getRoom(roomId);
+                    if (room != null) {
+                        // 4명 꽉 찼는지 확인
+                        if (room.getUserCount() >= 4) {
+                            // 실패 메시지 전송 (필요시 구현)
+                            System.out.println("[GAME] 입장 실패 (풀방)");
+                        } else {
+                            lobby.removeUser(this); // 로비에서 제거
+                            room.enterUser(this);   // 방에 추가
+                            this.currentRoom = room; // 현재 방 기억
                         }
-                        break;
+                    }
+                    break;
 
                 case Message.CHAT_MSG: // 대기방 채팅
                     if (currentRoom != null) {
@@ -94,9 +101,17 @@ public class ClientHandler extends Thread {
 
                 case Message.REQ_EXIT_ROOM: // 방 나가기
                     if (currentRoom != null) {
-                        currentRoom.exitUser(this); // 방에서 나감
-                        this.currentRoom = null;    // 방 정보 지움
-                        lobby.addUser(this);        // 다시 로비로 복귀
+                    	// 1. 방 퇴장 및 방 소멸 여부 확인
+                        boolean roomDestroyed = currentRoom.exitUser(this);
+
+                        // 2. 방이 소멸된 경우 (호스트가 나갔거나 마지막 유저가 나감)
+                        if (roomDestroyed) {
+                            lobby.removeRoom(currentRoom.getRoomId()); // 로비에서 방 제거
+                        } 
+                        
+                        // 3. 퇴장 처리: 현재 방 참조 제거 및 로비에 재등록
+                        this.currentRoom = null;
+                        lobby.addUser(this); // 로비로 돌아가서 로비 유저 목록에 다시 추가 (자동으로 방 목록 갱신 메시지 SRES_ROOM_LIST가 전송되어야 함)
                     }
                     break;
                 }

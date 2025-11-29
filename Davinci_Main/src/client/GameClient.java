@@ -61,7 +61,7 @@ public class GameClient extends JFrame {
         );
 
         // 4. [추가] 대기방 화면 생성
-        waitingPanel = new Waiting(); // 팀원 코드에 맞춰 파라미터 없이 생성
+        waitingPanel = new Waiting(this); // 팀원 코드에 맞춰 파라미터 없이 생성
 
         // 5. 패널 등록
         mainPanel.add(loginPanel, "LOGIN");
@@ -97,6 +97,47 @@ public class GameClient extends JFrame {
             e.printStackTrace();
         }
     }
+     /* Waiting Panel에서 Lobby Panel로 화면을 전환하고,
+     * 방 목록을 갱신하도록 요청합니다.
+     */
+    public void showLobby() {
+        // UI 스레드에서 화면 전환 실행
+        SwingUtilities.invokeLater(() -> {
+            cardLayout.show(mainPanel, "LOBBY");
+            // 로비로 돌아온 후, 방 목록을 서버에 요청하여 갱신합니다.
+            requestRoomList(); 
+        });
+    }
+    
+    // [추가] 서버에 방 목록 갱신을 요청하는 메서드
+    private void requestRoomList() {
+        if (oos == null) return;
+        try {
+            // 서버에 방 목록 갱신을 요청하는 메시지를 보냅니다.
+            // (Message.REQ_JOIN_ROOM 상수가 재활용되거나 새로운 상수가 필요할 수 있습니다. 
+            // 현재는 REQ_JOIN_ROOM이 방 입장 요청이므로, 새로운 요청 상수(예: REQ_ROOM_LIST)가 필요하지만, 
+            // 현재 코드를 기반으로 메시지를 보냅니다. Lobby.java의 broadcastRoomList()는 
+            // lobbyUsers에게 SRES_ROOM_LIST를 보내므로, Lobby로 돌아왔다면 목록이 갱신되어야 합니다.)
+            // 임시로 Lobby에서 방 목록을 요청받는 기능이 있다고 가정하고 메시지를 보냅니다.
+            
+            // Note: 현재 서버 코드는 클라이언트가 로비로 돌아오면 (Lobby.addUser(this)) 
+            // 서버가 자동으로 목록을 보내주므로, 클라이언트가 명시적으로 요청할 필요는 없을 수 있습니다.
+            // 하지만 안전을 위해 명시적 요청을 보낼 수도 있습니다.
+            
+            // 현재 서버 코드는 클라이언트가 방에서 나가면 (ClientHandler.REQ_EXIT_ROOM 처리):
+            // 1. currentRoom.exitUser(this);
+            // 2. this.currentRoom = null;
+            // 3. lobby.addUser(this);  <-- 이 시점에 Lobby.addUser()가 sendRoomList(this)를 호출하여 
+            //    클라이언트에게 목록을 보내줍니다. (따라서 명시적 요청은 불필요할 수 있습니다.)
+            
+            // 만약 서버 측에서 자동 전송이 안된다면 이 주석을 제거하고 사용하세요:
+            // oos.writeObject(new Message(Message.REQ_ROOM_LIST)); 
+            // oos.flush();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     // 서버 접속 및 화면 전환 로직
     private void connectToServer() {
@@ -129,6 +170,7 @@ public class GameClient extends JFrame {
             Message response = (Message) ois.readObject();      
 
             if (response.getMode() == Message.LOGIN_SUCCESS) {
+            	this.myPlayerID = nickname;
                 lobbyPanel.updateGreeting(nickname);
                 cardLayout.show(mainPanel, "LOBBY");
                 setTitle("다빈치코드 - " + nickname);
@@ -171,15 +213,41 @@ public class GameClient extends JFrame {
 
                         // [추가] 방 입장 성공 -> 대기방 이동
                         // (Message.java에 RES_JOIN_SUCCESS 상수가 있어야 합니다. 없으면 3000 사용)
-                        case 3000: // Message.RES_JOIN_SUCCESS
+                        case Message.RES_JOIN_SUCCESS:
                             System.out.println("방 입장 성공!");
                             SwingUtilities.invokeLater(() -> cardLayout.show(mainPanel, "ROOM"));
+                            break;
+                            
+                         // ServerListener 내부 run() 메서드의 switch 문 안
+                        case Message.CHAT_MSG: // (상수 값이 없다면 서버 코드와 동일하게 맞춤)
+                            String chatText = (String) msg.getData1(); // 서버 코드: "[" + nickname + "] " + msg.getData1()
+                            SwingUtilities.invokeLater(() -> {
+                                waitingPanel.appendChat(chatText);
+                            });
+                            break;
+                        case Message.ROOM_UPDATE: // <--- [핵심 추가] 방 상태 업데이트
+                            Vector<String> userInfos = (Vector<String>) msg.getPayload();
+                            SwingUtilities.invokeLater(() -> {
+                                // Waiting 패널의 새로운 메서드를 호출하여 UI 갱신
+                                // myPlayerID는 로그인 성공 시 GameClient에 저장되어 있어야 함
+                                waitingPanel.updatePlayers(userInfos, myPlayerID); 
+                            });
                             break;
                     }
                 }
             } catch (Exception e) {
                 System.out.println("서버와의 연결이 끊어졌습니다.");
             }
+        }
+    }
+    
+    public void send(Message msg) {
+        if (oos == null) return;
+        try {
+            oos.writeObject(msg);
+            oos.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

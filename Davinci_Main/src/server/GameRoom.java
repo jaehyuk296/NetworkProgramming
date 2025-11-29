@@ -30,23 +30,30 @@ public class GameRoom {
         userList.add(handler);
         readyState.put(handler.getNickname(), false); // 기본값: 준비 안됨
         
+        broadcastRoomState();
+        
         // 입장한 사람에게 성공 메시지 전송
         handler.sendMessage(new Message(Message.RES_JOIN_SUCCESS, roomId));
-        
-        broadcastRoomState();
     }
 
     // 2. 유저 퇴장 처리
-    public void exitUser(ClientHandler handler) {
+    public boolean exitUser(ClientHandler handler) {
         userList.remove(handler);
         readyState.remove(handler.getNickname());
         
-        // 사람이 다 나가면 방 폭파 로직은 Lobby에서 처리하지만, 사람이 남았는데 방장이 나갔으면 방장 승계
-        if (userList.size() > 0 && handler.getNickname().equals(hostName)) {
+        // 1. 남아있는 유저가 0명인 경우: 방 소멸 (true 반환)
+        if (userList.size() == 0) {
+            return true; 
+        }
+        
+        //  남았는데 방장이 나갔으면 방장 승계
+        if (handler.getNickname().equals(hostName)) {
             hostName = userList.get(0).getNickname(); // 다음 사람에게 방장 넘김
         }
         
         broadcastRoomState();
+        
+        return false;
     }
 
     // 3. 준비(Ready) 상태 토글
@@ -75,14 +82,15 @@ public class GameRoom {
         
         for (ClientHandler user : userList) {
             String nick = user.getNickname();
-            String isReady = readyState.get(nick) ? "ON" : "OFF";
+            boolean isUserReady = readyState.getOrDefault(nick, false);
+            String isReady = isUserReady ? "ON" : "OFF";
             String isHost = nick.equals(hostName) ? "HOST" : "MEMBER";
             
             userInfos.add(nick + ":" + isReady + ":" + isHost);
         }
         
         // ROOM_UPDATE 모드로 전송
-        Message msg = new Message(Message.ROOM_UPDATE, userInfos);
+        Message msg = new Message(Message.ROOM_UPDATE, "RoomUpdate", userInfos);
         for (ClientHandler user : userList) {
             user.sendMessage(msg);
         }
