@@ -18,8 +18,9 @@ public class Lobby {
     }
 
     public synchronized void createRoom(ClientHandler host, String roomTitle) {
-    	GameRoom newRoom = new GameRoom(roomCounter++, roomTitle, host);
+        GameRoom newRoom = new GameRoom(roomCounter++, roomTitle, host);
         roomList.add(newRoom);
+        
         // 1. 방장의 currentRoom 설정 (GameRoom 참조 주입)
         host.setRoom(newRoom); 
         
@@ -28,6 +29,11 @@ public class Lobby {
         
         // 로비에 남아있는 유저들에게 방 목록 갱신
         broadcastRoomList();
+        
+        // ★ [추가] 서버 관리자 GUI에 '방 탭' 추가 요청
+        if (GameServer.instance != null) {
+            GameServer.instance.addRoomTab(newRoom.getRoomId(), roomTitle);
+        }
     }
     
     public synchronized void removeRoom(int roomId) {
@@ -52,6 +58,11 @@ public class Lobby {
             
             // 2. 모든 로비 유저에게 갱신된 방 목록을 브로드캐스트
             broadcastRoomList();
+            
+            // ★ [추가] 서버 관리자 GUI에서 '방 탭' 삭제 요청
+            if (GameServer.instance != null) {
+                GameServer.instance.removeRoomTab(roomId);
+            }
             
         } else {
             System.err.println("[LOBBY] 경고: 존재하지 않는 방 ID (" + roomId + ") 제거 요청을 받았습니다.");
