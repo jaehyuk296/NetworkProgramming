@@ -58,26 +58,47 @@ public class ClientHandler extends Thread {
                         System.out.println("[GAME] 방 생성 요청: " + nickname + " -> " + title);
                         lobby.createRoom(this, title);
                         break;
-                        
+
                     case Message.REQ_JOIN_ROOM:
                         int roomId = Integer.parseInt(String.valueOf(msg.getData1()));
-                        System.out.println("[GAME] 방 입장 요청: " + nickname + " -> " + roomId + "번방");
+                        System.out.println("[GAME] 방 입장 요청: " + nickname + " -> " + roomId);
                         
                         GameRoom room = lobby.getRoom(roomId);
-                        
                         if (room != null) {
-                            room.enterUser(this);
-                            this.currentRoom = room;
-                            lobby.removeUser(this); // 로비 퇴장
-                        } else {
-                            System.out.println("[GAME] 입장 실패 (방 없음): " + roomId);
+                            // 4명 꽉 찼는지 확인
+                            if (room.getUserCount() >= 4) {
+                                // 실패 메시지 전송 (필요시 구현)
+                                System.out.println("[GAME] 입장 실패 (풀방)");
+                            } else {
+                                lobby.removeUser(this); // 로비에서 제거
+                                room.enterUser(this);   // 방에 추가
+                                this.currentRoom = room; // 현재 방 기억
+                            }
                         }
                         break;
-                        
-                    // 나중에 추가할 채팅은 [CHAT] 태그 사용
-                    // case Message.CHAT_MSG:
-                    //    System.out.println("[CHAT] " + nickname + ": " + msg.getData1());
-                    //    break;
+
+                case Message.CHAT_MSG: // 대기방 채팅
+                    if (currentRoom != null) {
+                        // "닉네임: 할말" 형태로 만들어서 뿌림
+                        String chatText = "[" + nickname + "] " + msg.getData1();
+                        currentRoom.broadcastChat(chatText);
+                        System.out.println("[CHAT] " + chatText); // 서버 로그
+                    }
+                    break;
+
+                case Message.REQ_READY: // 준비 버튼
+                    if (currentRoom != null) {
+                        currentRoom.toggleReady(this);
+                    }
+                    break;
+
+                case Message.REQ_EXIT_ROOM: // 방 나가기
+                    if (currentRoom != null) {
+                        currentRoom.exitUser(this); // 방에서 나감
+                        this.currentRoom = null;    // 방 정보 지움
+                        lobby.addUser(this);        // 다시 로비로 복귀
+                    }
+                    break;
                 }
             }
         } catch (Exception e) {

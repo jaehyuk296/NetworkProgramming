@@ -32,7 +32,7 @@ public class GameServer extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         
-        // --- [상단] 필터링 패널 ---
+        // [상단] 필터링 패널
         JPanel topPanel = new JPanel();
         topPanel.add(new JLabel("로그 필터: "));
         
@@ -46,7 +46,7 @@ public class GameServer extends JFrame {
         topPanel.add(filterCombo);
         add(topPanel, BorderLayout.NORTH);
 
-        // --- [중앙] 로그 영역 ---
+        // [중앙] 로그 영역
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 14));
@@ -54,7 +54,6 @@ public class GameServer extends JFrame {
         
         setVisible(true);
 
-        // System.out.println 납치 시작
         redirectSystemStreams();
 
         // 서버 로직 스레드 시작
@@ -93,19 +92,19 @@ public class GameServer extends JFrame {
                 new ClientHandler(socket, serverLobby).start();
             }
         } catch (Exception e) {
-            e.printStackTrace(); // 이건 [ERR]로 자동 변환됨
+            e.printStackTrace();
         }
     }
 
-    // --- [핵심] 로그 처리 및 필터링 로직 ---
+    // 로그 처리 및 필터링 로직
 
     private void addLog(String text) {
         String timeLog = sdf.format(new Date()) + text;
         
-        // 1. 기록에 저장
+        // 기록에 저장
         logHistory.add(timeLog);
         
-        // 2. 현재 필터에 맞으면 화면에 출력
+        // 현재 필터에 맞으면 화면에 출력
         if (shouldShow(timeLog)) {
             logArea.append(timeLog);
             // 자동 스크롤
@@ -135,7 +134,7 @@ public class GameServer extends JFrame {
         return log.contains("[" + keyword + "]");
     }
 
-    // --- 시스템 출력 납치 (Buffer 사용) ---
+    // 시스템 출력
     private void redirectSystemStreams() {
         OutputStream out = new OutputStream() {
             // 라인 단위로 로그를 끊어서 처리하기 위한 버퍼

@@ -15,6 +15,13 @@ public class Message implements Serializable {
     public static final int REQ_JOIN_ROOM = 2002;  // 서버 -> 클라: "방 목록이 갱신 (리스트 데이터)"
     public static final int SRES_ROOM_LIST = 2003;  // 서버 -> 클라: "방 목록 데이터 갱신"  
 
+    // 대기방 전용 프로토콜
+    public static final int RES_JOIN_SUCCESS = 3000; // 방 입장 성공 (대기방 화면으로 이동)
+    public static final int ROOM_UPDATE = 3001;      // 방 상태 갱신 (유저 리스트, 준비 상태 등)
+    public static final int CHAT_MSG = 3002;         // 대화 메시지
+    public static final int REQ_READY = 3003;        // 준비 버튼 클릭
+    public static final int REQ_EXIT_ROOM = 3004;    // 방 나가기
+
     // --- 데이터 ---
     private int mode;       // 위 상수 중 하나
     private Object data1;   // (보낼 데이터 닉네임, 방제목, 방번호 등)
