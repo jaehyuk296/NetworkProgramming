@@ -124,9 +124,17 @@ public class ClientHandler extends Thread {
                 }   
             }
         } catch (Exception e) {
-            System.out.println("[CONN] 연결 종료: " + nickname);
+            System.out.println("[CONN] 비정상 연결 종료: " + nickname);
             lobby.removeUser(this);
-            if(currentRoom != null) currentRoom.exitUser(this);
+            // 2.  방에 있었다면 퇴장 처리하고, 빈 방이면 폭파까지 해야 함!
+            if (currentRoom != null) {
+                boolean roomDestroyed = currentRoom.exitUser(this);
+                
+                if (roomDestroyed) {
+                    // 방이 텅 비었으니 로비(그리고 서버탭)에서 방 제거
+                    lobby.removeRoom(currentRoom.getRoomId());
+                }
+            }
         }
     }
 }

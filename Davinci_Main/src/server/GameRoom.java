@@ -89,12 +89,14 @@ public class GameRoom {
 
     // 4. 채팅 브로드캐스트
     public void broadcastChat(String msgText) {
+        // 1. 클라이언트들에게 전송 (기존 로직)
         Message msg = new Message(Message.CHAT_MSG, msgText);
         for (ClientHandler user : userList) {
             user.sendMessage(msg);
         }
-        // 채팅 로그는 너무 많을 수 있으니 탭에는 안 찍거나, 필요하면 roomLog 사용
-        // roomLog("[CHAT] " + msgText); 
+
+        // 2. 서버의 해당 방 탭(Room X)에도 채팅 기록 남기기
+        roomLog("[CHAT] " + msgText);
     }
 
     // [추가] 모든 유저에게 일반 메시지 객체 전송 (범용 메서드)
