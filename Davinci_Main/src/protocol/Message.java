@@ -24,15 +24,8 @@ public class Message implements Serializable {
     public static final int REQ_START_GAME = 3005;   // 게임 시작 요청 (방장만 가능)
 
     // 게임 전용 프로토콜
-    public static final int GAME_START = 4000;    // 게임 시작 (타일 분배)
-    public static final int TURN_START = 4001;    // 턴 변경 알림
-    
-    public static final int REQ_DRAW = 4002;      // 타일 뽑기 요청 (색상:인덱스)
-    public static final int RES_DRAW = 4003;      // 타일 뽑기 결과 (타일정보)
-    
-    public static final int REQ_GUESS = 4004;     // 추리 요청 (타겟:인덱스:값)
-    public static final int BCAST_REVEAL = 4005;  // 타일 공개 알림 (전체 전송)
-    public static final int GAME_OVER = 4006;     // 게임 종료
+    public static final int GAME_START = 4000;     // 서버 -> 클라: "게임 시작! (내 타일 정보 포함)"
+    public static final int TURN_START = 4001;     // 서버 -> 클라: "누구의 턴입니다"
 
     // --- 데이터 ---
     private int mode;       // 위 상수 중 하나

@@ -86,7 +86,7 @@ public class ClientHandler extends Thread {
 
                 case Message.CHAT_MSG: // 대기방 채팅
                     if (currentRoom != null) {
-                        // "닉네임: 할말" 형태
+                        // "닉네임: 할말" 형태로 만들어서 뿌림
                         String chatText = "[" + nickname + "] " + msg.getData1();
                         currentRoom.broadcastChat(chatText);
                         System.out.println("[CHAT] " + chatText); // 서버 로그
@@ -121,31 +121,17 @@ public class ClientHandler extends Thread {
                         currentRoom.startGame();
                     }
                     break;
-
-                case Message.REQ_DRAW: // "BLACK:3"
-                    if (currentRoom != null) {
-                        String drawData = (String) msg.getData1();
-                        currentRoom.handleDraw(this, drawData);
-                    }
-                    break;
-
-                case Message.REQ_GUESS: // "TargetID:Index:Value"
-                    if (currentRoom != null) {
-                        String guessData = (String) msg.getData1();
-                        currentRoom.handleGuess(this, guessData);
-                    }
-                    break;
-                } 
+                }   
             }
         } catch (Exception e) {
-            // ★ 여기를 수정하세요 ★
-            System.out.println("[ERR] 연결 종료 원인 분석:");
-            e.printStackTrace(); // 빨간 에러 메시지를 전부 출력함
-            
+            System.out.println("[CONN] 비정상 연결 종료: " + nickname);
             lobby.removeUser(this);
+            // 2.  방에 있었다면 퇴장 처리하고, 빈 방이면 폭파까지 해야 함!
             if (currentRoom != null) {
                 boolean roomDestroyed = currentRoom.exitUser(this);
+                
                 if (roomDestroyed) {
+                    // 방이 텅 비었으니 로비(그리고 서버탭)에서 방 제거
                     lobby.removeRoom(currentRoom.getRoomId());
                 }
             }

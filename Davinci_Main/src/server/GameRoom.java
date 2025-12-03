@@ -21,8 +21,6 @@ public class GameRoom {
     // 게임용 변수
     private Stack<Tile> deck = new Stack<>(); // 남은 타일 더미
     private int turnIndex = 0; // 현재 누구 턴인지 (0 ~ userList.size()-1)
-    private Map<String, Vector<Tile>> userHands = new HashMap<>(); // 유저별 손 패 저장 (정답 판별용
-    private Tile currentTurnDrawnTile = null; // 이번 턴에 뽑은 타일 (추리 실패 시 공개용)
     
     // 준비 상태 관리 (닉네임 -> 준비여부)
     private Map<String, Boolean> readyState = new HashMap<>();
@@ -34,7 +32,7 @@ public class GameRoom {
         enterUser(host);
     }
 
-    // 로그 기록용 헬퍼 메서드 (메인 로그 + 방 탭 로그)
+    // ★ [추가] 로그 기록용 헬퍼 메서드 (메인 로그 + 방 탭 로그)
     private void roomLog(String msg) {
         // 1. 콘솔(메인 로그)에 출력
         System.out.println("[Room " + roomId + "] " + msg);
@@ -73,22 +71,20 @@ public class GameRoom {
         if (handler.getNickname().equals(hostName)) {
             hostName = userList.get(0).getNickname(); // 다음 사람에게 방장 넘김
             roomLog("방장이 변경되었습니다: " + hostName);
-            broadcastChat("[System] 방장이 " + hostName + "님으로 변경되었습니다.");
         }
         
         broadcastRoomState();
+        
         return false;
     }
 
     // 3. 준비(Ready) 상태 토글
     public void toggleReady(ClientHandler handler) {
         String nick = handler.getNickname();
-        if (!nick.equals(hostName)) {
-            boolean current = readyState.getOrDefault(nick, false);
-            readyState.put(nick, !current); 
-            roomLog(nick + "님 준비상태: " + !current);
-            broadcastRoomState();
-        }
+        boolean current = readyState.getOrDefault(nick, false);
+        readyState.put(nick, !current); 
+        
+        broadcastRoomState();
     }
 
     // 4. 채팅 브로드캐스트
@@ -103,7 +99,7 @@ public class GameRoom {
         roomLog("[CHAT] " + msgText);
     }
 
-    //  모든 유저에게 일반 메시지 객체 전송
+    // [추가] 모든 유저에게 일반 메시지 객체 전송 (범용 메서드)
     private void broadcast(Message msg) {
         for (ClientHandler user : userList) {
             user.sendMessage(msg);
@@ -123,11 +119,11 @@ public class GameRoom {
             userInfos.add(nick + ":" + isReady + ":" + isHost);
         }
         
-        Message msg = new Message(Message.ROOM_UPDATE, userInfos, hostName);
+        Message msg = new Message(Message.ROOM_UPDATE, "RoomUpdate", userInfos);
         broadcast(msg);
     }
 
-    // 게임 시작 로직 (방장이 버튼 누르면 호출됨)
+    // [추가] 게임 시작 로직 (방장이 버튼 누르면 호출됨)
     public void startGame() {
         // 1. 인원 부족 체크
         if (userList.size() < 2) {
@@ -161,9 +157,6 @@ public class GameRoom {
             
             // 타일 정렬
             Collections.sort(myTiles);
-
-            // 서버 메모리에 저장 (정답 판별용)
-            userHands.put(user.getNickname(), myTiles);
             
             // 3. 각 유저에게 전송
             Vector<String> playerOrder = getPlayerNames();
@@ -174,99 +167,6 @@ public class GameRoom {
         
         // 4. 첫 번째 턴 지정 및 알림
         turnIndex = 0;
-        currentTurnDrawnTile = null;
-        notifyTurn();
-    }
-
-    // [타일 뽑기 로직] (ClientHandler 연결 필요)
-    public void handleDraw(ClientHandler player, String data) {
-        // data format: "COLOR:INDEX"
-        ClientHandler currentTurnUser = userList.get(turnIndex);
-        if (!player.equals(currentTurnUser)) return;
-
-        if (currentTurnDrawnTile != null) {
-            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 이미 타일을 뽑았습니다."));
-            return;
-        }
-
-        String[] parts = data.split(":");
-        String color = parts[0];
-        int insertIndex = Integer.parseInt(parts[1]);
-
-        // 덱에서 해당 색상 찾기
-        Tile drawn = null;
-        for (int i = deck.size() - 1; i >= 0; i--) {
-            if (deck.get(i).getColor().equals(color)) {
-                drawn = deck.remove(i);
-                break;
-            }
-        }
-
-        if (drawn != null) {
-            // 서버 메모리에 추가
-            Vector<Tile> hand = userHands.get(player.getNickname());
-            if (insertIndex > hand.size()) insertIndex = hand.size();
-            hand.add(insertIndex, drawn);
-            
-            this.currentTurnDrawnTile = drawn; // 기록
-
-            // 클라이언트에게 전송 (인덱스 포함)
-            player.sendMessage(new Message(Message.RES_DRAW, drawn, insertIndex));
-            
-            broadcastChat("[System] " + player.getNickname() + "님이 " + color + " 타일을 가져갔습니다.");
-            roomLog(player.getNickname() + "님이 " + color + " 타일 드로우");
-        } else {
-            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 해당 색상 타일이 없습니다."));
-        }
-    }
-
-    // [추리 로직] (ClientHandler 연결 필요)
-    public void handleGuess(ClientHandler guesser, String data) {
-        // data format: "TargetID:Index:Value"
-        String[] parts = data.split(":");
-        String targetID = parts[0];
-        int targetIndex = Integer.parseInt(parts[1]);
-        String guessValue = parts[2];
-
-        Vector<Tile> targetHand = userHands.get(targetID);
-        Tile actualTile = targetHand.get(targetIndex);
-
-        boolean isCorrect = false;
-        if (actualTile.isJoker()) {
-             if(guessValue.equals("-1") || guessValue.equals("JOKER")) isCorrect = true;
-        } else {
-             if(guessValue.equals(String.valueOf(actualTile.getNumber()))) isCorrect = true;
-        }
-
-        if (isCorrect) {
-            actualTile.setRevealed(true);
-            broadcastChat("[System] " + guesser.getNickname() + "님이 맞췄습니다!");
-            roomLog(guesser.getNickname() + " 추리 성공 -> " + targetID + "의 타일 공개");
-            
-            String targetInfo = targetID + ":" + targetIndex;
-            broadcast(new Message(Message.BCAST_REVEAL, targetInfo, actualTile));
-            
-        } else {
-            broadcastChat("[System] " + guesser.getNickname() + "님이 틀렸습니다!");
-            roomLog(guesser.getNickname() + " 추리 실패");
-            
-            // 패널티: 방금 뽑은 내 타일 공개
-            if (currentTurnDrawnTile != null) {
-                currentTurnDrawnTile.setRevealed(true);
-                Vector<Tile> myHand = userHands.get(guesser.getNickname());
-                int myIndex = myHand.indexOf(currentTurnDrawnTile);
-                
-                String myInfo = guesser.getNickname() + ":" + myIndex;
-                broadcast(new Message(Message.BCAST_REVEAL, myInfo, currentTurnDrawnTile));
-            }
-            
-            nextTurn(); // 턴 넘기기
-        }
-    }
-
-    private void nextTurn() {
-        currentTurnDrawnTile = null;
-        turnIndex = (turnIndex + 1) % userList.size();
         notifyTurn();
     }
 

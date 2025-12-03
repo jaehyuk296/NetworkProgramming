@@ -24,29 +24,30 @@ import javax.swing.JTextField;
 
 import protocol.Message;
 
-public class Waiting extends JPanel {
+public class InGame extends JPanel {
     
     private Image backgroundImage;
     private JLabel player1, player2, player3, player4;
     private JLabel[] playerLabels;
     private JTextArea chatArea;
     private JTextField t_input;
-    private JButton b_send, b_start, b_ready, b_exit;
+    private JButton b_send; // b_start, b_ready, b_exit는 게임 화면에 필요 없으므로 제거했습니다.
     
-    // [핵심] 통신을 담당하는 메인 클라이언트 참조
     private GameClient gameClient;
     
     // 윈도우 종료 이벤트를 감지할 리스너 변수
     private WindowAdapter exitListener;
     
-    // 생성자에서 GameClient를 전달받습니다.
-    public Waiting(GameClient gameClient) {
+    // ⭐️ [추가] 유저 정보를 저장할 필드
+    private Vector<String> initialUserInfos; 
+    
+    public InGame(GameClient gameClient) {
         this.gameClient = gameClient;
         
         try {
+            // [수정] InGame.java는 game_img.jpg로 가정합니다.
             backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg"));
         } catch (IOException e) {
-            // 원본 코드는 game_img.jpg였으나, 실제 파일명은 main_img.jpg로 가정합니다.
             System.out.println("이미지 로드 실패: ./imgs/game_img.jpg");
         }
 
@@ -57,33 +58,16 @@ public class Waiting extends JPanel {
         playerLabels = new JLabel[] {player1, player2, player3, player4};
     }
     
-    @Override
-    public void addNotify() {
-        super.addNotify();
-        
-        // 현재 이 패널을 담고 있는 부모 윈도우(JFrame)를 가져옴
-        Window window = SwingUtilities.getWindowAncestor(this);
-        
-        if (window != null) {
-            // 리스너가 중복 생성되지 않도록 초기화
-            if (exitListener == null) {
-                exitListener = new WindowAdapter() {
-                    @Override
-                    public void windowClosing(WindowEvent e) {
-                        // X 버튼을 눌렀을 때 실행되는 로직
-                        System.out.println("대기방에서 X 버튼 종료 감지 -> 퇴장 요청 전송");
-                        gameClient.send(new Message(Message.REQ_EXIT_ROOM));
-                    }
-                };
-            }
-            // 윈도우에 리스너 부착
-            window.addWindowListener(exitListener);
-        }
+    // ⭐️ [추가] 초기 유저 정보를 설정하는 생성자 또는 메서드를 GameClient에서 호출해야 합니다.
+    // 여기서는 메서드로 구현합니다. 이 메서드는 게임 시작 시 GameClient에서 호출됩니다.
+    public void setInitialPlayers(Vector<String> userInfos, String myNickname) {
+        this.initialUserInfos = userInfos; // 나중에 필요할 경우 저장
+        updatePlayerLabels(userInfos, myNickname); // 바로 라벨 업데이트
     }
     
     private void buildGUI() {
         setPlayer();
-        setButtons();
+//        setButtons(); // InGame 화면에서는 버튼 제거
         setChat();
     }
     
@@ -94,7 +78,7 @@ public class Waiting extends JPanel {
         player1.setFont(new Font("Malgun Gothic", Font.BOLD, 24));
         player1.setHorizontalAlignment(JLabel.CENTER);
         player1.setOpaque(true); 
-        player1.setBackground(Color.lightGray); // 초기 대기
+        player1.setBackground(Color.lightGray); 
         
         // Player 2 (좌측)
         player2 = new JLabel("Player2");
@@ -126,58 +110,16 @@ public class Waiting extends JPanel {
         add(player4);
     }
     
-    private void setButtons() {
-        // 시작하기 버튼 (HOST 전용)
-        b_start = new JButton("게임 시작");
-        b_start.setBounds(400, 700, 200, 40);
-        b_start.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
-        b_start.setVisible(false); // 처음에는 숨김
-        b_start.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                // 서버로 시작 요청을 보냅니다. (서버에서 최종적으로 모두 준비되었는지 확인해야 합니다.)
-                gameClient.send(new Message(Message.REQ_START_GAME)); // [수정] 프로토콜 start game 요청 사용
-            }
-        });
-
-        add(b_start);
-
-        // 준비하기 버튼 (일반 플레이어)
-        b_ready = new JButton("준비하기");
-        b_ready.setBounds(400, 700, 200, 40);
-        b_ready.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
-        b_ready.setVisible(false); // 처음에는 숨김
-        b_ready.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                gameClient.send(new Message(Message.REQ_READY, "READY"));
-            }
-        });
-        add(b_ready);
-        
-        b_exit = new JButton("나가기");
-        b_exit.setBounds(20, 20, 100, 40);
-        b_exit.setFont(new Font("Malgun Gothic", Font.BOLD, 16));
-
-        b_exit.addActionListener(e -> {
-            // 1. 서버에 퇴장 알림
-            gameClient.send(new Message(Message.REQ_EXIT_ROOM));
-
-            // 2. 클라이언트 화면 전환 요청
-            gameClient.showLobby();
-        });
-
-        add(b_exit);
-    }
+    // setButtons()는 InGame에서 불필요하므로 주석 처리된 채로 두거나 삭제합니다.
     
     private void setChat() {
         chatArea = new JTextArea();
         chatArea.setEditable(false);
         chatArea.setBackground(new Color(230, 230, 230));
         
-        // 채팅창 스크롤바
         JScrollPane scrollPane = new JScrollPane(chatArea);
         scrollPane.setBounds(20, 550, 320, 150);
         
-        // 입력 필드
         t_input = new JTextField(30);
         t_input.setBounds(20, 710, 250, 30);
         t_input.addActionListener(new ActionListener() {
@@ -186,7 +128,6 @@ public class Waiting extends JPanel {
             }
         });
         
-        // 전송 버튼
         b_send = new JButton("Send");
         b_send.setFont(new Font("Arial", Font.BOLD, 12));
         b_send.setBounds(275, 710, 65, 30);
@@ -218,37 +159,29 @@ public class Waiting extends JPanel {
     }
     
     /**
-     * 서버로부터 받은 유저 정보를 파싱하여 JLabel에 설정합니다.
+     * ⭐️ [Waiting.java에서 복사/수정] 서버로부터 받은 유저 정보를 파싱하여 JLabel에 설정합니다.
+     * InGame에서는 오직 플레이어들의 닉네임과 위치만 설정합니다.
      * @param userInfos 유저 정보 리스트 (닉네임:READY여부:방장여부 형식의 String Vector)
      * @param myNickname 현재 클라이언트의 닉네임
      */
-    public void updatePlayers(Vector<String> userInfos, String myNickname) {
+    public void updatePlayerLabels(Vector<String> userInfos, String myNickname) {
         
         if (userInfos == null) {
-            System.err.println("[Client] ROOM_UPDATE payload (userInfos) is null.");
-            // P2, P3, P4만 초기화하고 함수 종료
-            for (int i = 1; i < playerLabels.length; i++) {
-                playerLabels[i].setText("대기 중...");
-                playerLabels[i].setBackground(Color.lightGray);
-            }
+            System.err.println("[Client] Initial player payload (userInfos) is null.");
             return;
         }
 
-        // 1. 모든 라벨 초기화 (핵심 수정: P1을 제외하고 P2, P3, P4만 초기화)
-        for (int i = 1; i < playerLabels.length; i++) {
-            playerLabels[i].setText("대기 중...");
+        // 1. 모든 라벨 초기화 (P1~P4 모두 초기화)
+        for (int i = 0; i < playerLabels.length; i++) {
+             // ⭐️ InGame에서는 닉네임을 비우고 배경색을 기본으로 설정
+            playerLabels[i].setText("자리 비었음");
             playerLabels[i].setBackground(Color.lightGray);
         }
         
         // 0: 나 (하단), 1: 좌측, 2: 상단, 3: 우측
         int currentPositionIndex = 1; // 내 위치(0)를 제외하고 P2(1)부터 순서대로 할당 시작
 
-        // 🎯 [추가] 시작 버튼 활성화 판단을 위한 변수
-        boolean amIHost = false;
-        int totalPlayers = 0;
-        int readyPlayers = 0;
-        
-        // 2. 유저 정보 설정 및 상태 카운트
+        // 2. 유저 정보 설정
         for (String info : userInfos) {
             if (info == null || info.isEmpty()) continue; 
             
@@ -256,18 +189,7 @@ public class Waiting extends JPanel {
             if (parts.length < 3) continue;
 
             String nickname = parts[0];
-            String isReady = parts[1];
             String isHost = parts[2];
-            
-            // 🎯 카운트 로직 추가
-            totalPlayers++; // 방에 있는 모든 유저 카운트
-            if (isReady.equals("ON") || isHost.equals("HOST")) {
-                 // 방장은 항상 준비 상태로 간주
-                readyPlayers++;
-            }
-            if (nickname.equals(myNickname) && isHost.equals("HOST")) {
-                amIHost = true;
-            }
             
             int labelIndex; // 실제로 닉네임을 설정할 JLabel의 인덱스
             
@@ -280,53 +202,50 @@ public class Waiting extends JPanel {
                     labelIndex = currentPositionIndex; 
                     currentPositionIndex++;
                 } else {
-                    continue; 
+                    continue; // 4명 초과 시 무시
                 }
             }
 
             // 5. 라벨 업데이트
             JLabel targetLabel = playerLabels[labelIndex];
             
-            // 방장은 "준비" 대신 "(방장)"을 표시하는 것이 자연스러움
-            String status;
-            if (isHost.equals("HOST")) {
-                 status = " (방장)";
-            } else {
-                status = isReady.equals("ON") ? " (준비)" : " (대기)";
-            }
-
+            // InGame에서는 '준비', '대기' 대신 '방장' 여부만 표시하거나 아예 표시하지 않아도 됩니다.
+            String status = isHost.equals("HOST") ? " (방장)" : "";
+            
             targetLabel.setText(nickname + status);
             
-            // 배경색 업데이트
-            if (isReady.equals("ON") || isHost.equals("HOST")) {
-                targetLabel.setBackground(Color.ORANGE);
-            } else {
-                targetLabel.setBackground(new Color(150, 255, 150)); 
-            }
+            // 게임 중에는 배경색을 통일시키거나, 게임 상태에 따라 다르게 지정할 수 있습니다.
+            // 일단 활성화된 플레이어는 녹색 계열로 설정
+            targetLabel.setBackground(new Color(150, 255, 150)); 
         }
         
-        // ✅ 버튼 표시 및 활성화 로직
-        
-        // 1. 방장/준비 버튼 가시성 설정
-        if (amIHost) {
-            b_start.setVisible(true);
-            b_ready.setVisible(false);
-            
-            // 2. 시작 버튼 활성화 조건 확인
-            // 조건: 최소 2명 이상 AND (총 유저 수 == 준비된 유저 수)
-            boolean allReady = (totalPlayers >= 2 && totalPlayers == readyPlayers);
-            
-            // 3. 버튼 활성화/비활성화
-            b_start.setEnabled(allReady);
-            
-        } else {
-            b_start.setVisible(false);
-            b_ready.setVisible(true);
-            b_ready.setEnabled(true); // 일반 유저는 항상 준비 가능
-        }
+        // ⭐️ InGame에서는 버튼 로직 (b_start, b_ready)이 불필요하므로 제거했습니다.
     }
     
-    // 패널이 화면에서 사라지거나(로비 이동 등) 연결이 끊길 때 호출됨
+    // ⭐️ [수정] Window Listener는 GameClient의 WindowListener가 처리해야 하지만, 
+    // Waiting.java의 코드를 살리기 위해 남겨둡니다. 다만 게임 중에는 'REQ_EXIT_ROOM'이 아닌 
+    // '게임 종료/나가기'에 대한 새로운 프로토콜이 필요할 수 있습니다. 
+    // 여기서는 일단 Waiting과 동일하게 EXIT_ROOM 프로토콜을 사용합니다.
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        
+        Window window = SwingUtilities.getWindowAncestor(this);
+        
+        if (window != null) {
+            if (exitListener == null) {
+                exitListener = new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        // X 버튼 종료 시 방 퇴장 요청
+                        gameClient.send(new Message(Message.REQ_EXIT_ROOM));
+                    }
+                };
+            }
+            window.addWindowListener(exitListener);
+        }
+    }
+
     @Override
     public void removeNotify() {
         Window window = SwingUtilities.getWindowAncestor(this);
