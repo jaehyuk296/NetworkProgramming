@@ -86,7 +86,7 @@ public class ClientHandler extends Thread {
 
                 case Message.CHAT_MSG: // 대기방 채팅
                     if (currentRoom != null) {
-                        // "닉네임: 할말" 형태로 만들어서 뿌림
+                        // "닉네임: 할말" 형태
                         String chatText = "[" + nickname + "] " + msg.getData1();
                         currentRoom.broadcastChat(chatText);
                         System.out.println("[CHAT] " + chatText); // 서버 로그
@@ -121,7 +121,21 @@ public class ClientHandler extends Thread {
                         currentRoom.startGame();
                     }
                     break;
-                }   
+
+                case Message.REQ_DRAW: // "BLACK:3"
+                    if (currentRoom != null) {
+                        String drawData = (String) msg.getData1();
+                        currentRoom.handleDraw(this, drawData);
+                    }
+                    break;
+
+                case Message.REQ_GUESS: // "TargetID:Index:Value"
+                    if (currentRoom != null) {
+                        String guessData = (String) msg.getData1();
+                        currentRoom.handleGuess(this, guessData);
+                    }
+                    break;
+                } 
             }
         } catch (Exception e) {
             System.out.println("[CONN] 비정상 연결 종료: " + nickname);
