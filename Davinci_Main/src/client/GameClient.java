@@ -16,6 +16,7 @@ public class GameClient extends JFrame {
     private LoginPanel loginPanel;
     private Lobby lobbyPanel;
     private Waiting waitingPanel; // [추가] 대기방 패널
+    private InGame inGamePanel;
 
     // 네트워크 관련
     private Socket socket;
@@ -26,6 +27,10 @@ public class GameClient extends JFrame {
     public static void main(String[] args) {
         new GameClient();
     }
+    
+	// Waiting 방에서 최신으로 받은 유저 목록 저장용
+    private Vector<String> latestUserInfos = new Vector<>();
+
 
     public GameClient() {
         super("다빈치코드 Online");
@@ -62,11 +67,14 @@ public class GameClient extends JFrame {
 
         // 4. [추가] 대기방 화면 생성
         waitingPanel = new Waiting(this); // 팀원 코드에 맞춰 파라미터 없이 생성
+        
+        inGamePanel = new InGame(this);
 
         // 5. 패널 등록
         mainPanel.add(loginPanel, "LOGIN");
         mainPanel.add(lobbyPanel, "LOBBY");
         mainPanel.add(waitingPanel, "ROOM"); // [추가] 대기방 등록
+        mainPanel.add(inGamePanel, "GAME");
 
         add(mainPanel);
         
@@ -222,15 +230,34 @@ public class GameClient extends JFrame {
                         case Message.CHAT_MSG: // (상수 값이 없다면 서버 코드와 동일하게 맞춤)
                             String chatText = (String) msg.getData1(); // 서버 코드: "[" + nickname + "] " + msg.getData1()
                             SwingUtilities.invokeLater(() -> {
-                                waitingPanel.appendChat(chatText);
+                            	if (waitingPanel != null && waitingPanel.isVisible()) {
+                                    waitingPanel.appendChat(chatText);
+                                }
+
+                                // InGame 화면에서도 받을 수 있어야 함
+                                if (inGamePanel != null && inGamePanel.isVisible()) {
+                                    inGamePanel.appendChat(chatText);
+                                }
                             });
                             break;
                         case Message.ROOM_UPDATE: // <--- [핵심 추가] 방 상태 업데이트
                             Vector<String> userInfos = (Vector<String>) msg.getPayload();
+                            latestUserInfos = userInfos;
                             SwingUtilities.invokeLater(() -> {
                                 // Waiting 패널의 새로운 메서드를 호출하여 UI 갱신
                                 // myPlayerID는 로그인 성공 시 GameClient에 저장되어 있어야 함
-                                waitingPanel.updatePlayers(userInfos, myPlayerID); 
+                                waitingPanel.updatePlayers(latestUserInfos, myPlayerID); 
+                            });
+                            break;
+                        case Message.GAME_START:                            
+                            SwingUtilities.invokeLater(() -> {
+                                System.out.println("게임 시작 요청 수신. InGame 화면으로 전환.");
+                                // 1. 화면을 InGame 패널로 전환
+                                cardLayout.show(mainPanel, "GAME");
+                                // 2. InGame 패널에 플레이어 정보 전달
+                                inGamePanel.setInitialPlayers(latestUserInfos, myPlayerID); // ⭐️ 메서드 호출
+                                // (추가: InGame.java에 appendChat이 있다면)
+                                inGamePanel.appendChat("--- 게임 시작! ---");
                             });
                             break;
                     }
