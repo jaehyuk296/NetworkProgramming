@@ -26,39 +26,51 @@ public class Message implements Serializable {
     // 게임 전용 프로토콜
     public static final int GAME_START = 4000;     // 서버 -> 클라: "게임 시작! (내 타일 정보 포함)"
     public static final int TURN_START = 4001;     // 서버 -> 클라: "누구의 턴입니다"
+    public static final int REQ_DRAW = 4002;
+    public static final int RES_DRAW = 4003;
+    public static final int REQ_GUESS = 4004;
+    public static final int BCAST_REVEAL = 4005;
+    public static final int GAME_OVER = 4006;
 
     // --- 데이터 ---
-    private int mode;       // 위 상수 중 하나
-    private Object data1;   // (보낼 데이터 닉네임, 방제목, 방번호 등)
-    private Object payload; // 추가 데이터 (방 목록 Vector, 게임 객체 등)
-    
-    public Message(int mode, Object data1) {
-        this.mode = mode;
-        this.data1 = data1;
-    }
+private int mode;
+    private Object data1;
+    private Object data2; // (구 payload)
+    private Object data3; // 추가 데이터
 
+    // --- 생성자 ---
     public Message(int mode) {
-        this(mode, null);
+        this(mode, null, null, null);
     }
 
-    public Message(int mode, Object data1, Object payload) {
+    public Message(int mode, Object data1) {
+        this(mode, data1, null, null);
+    }
+
+    public Message(int mode, Object data1, Object data2) {
+        this(mode, data1, data2, null);
+    }
+
+    public Message(int mode, Object data1, Object data2, Object data3) {
         this.mode = mode;
         this.data1 = data1;
-        this.payload = payload;
+        this.data2 = data2;
+        this.data3 = data3;
     }
 
+    // --- Getter & Setter ---
     public int getMode() { return mode; }
+    
     public Object getData1() { return data1; }
+    public void setData1(Object data1) { this.data1 = data1; }
 
-    public void setData1(Object data1) {
-        this.data1 = data1;
-    }
-    // 방 목록을 꺼낼 때 이 메소드가 필요합니다.
-    public Object getPayload() {
-        return payload;
-    }
+    public Object getData2() { return data2; }
+    public void setData2(Object data2) { this.data2 = data2; }
 
-    public void setPayload(Object payload) {            
-        this.payload = payload;
-    }
+    public Object getData3() { return data3; }
+    public void setData3(Object data3) { this.data3 = data3; }
+
+    // [호환성 유지] payload는 data2를 가리킴
+    public Object getPayload() { return data2; }
+    public void setPayload(Object payload) { this.data2 = payload; }
 }

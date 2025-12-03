@@ -19,49 +19,56 @@ import javax.swing.*;
 
 public class GameServer extends JFrame {
 
-    // ★ [핵심 1] 어디서든 접근 가능한 정적 인스턴스 (싱글톤 효과)
     public static GameServer instance;
 
     // UI 컴포넌트
-    private JTabbedPane tabbedPane; // 탭 관리자
-    private JTextArea mainLogArea;  // 메인(전체) 로그 (기존 logArea)
+    private JTabbedPane tabbedPane;
     private JComboBox<String> filterCombo;
     
-    // 방 번호(ID)와 해당 방의 로그창(TextArea)을 매핑
-    private Map<Integer, JTextArea> roomLogs = new HashMap<>();
+    // [핵심 변경] 방의 로그 데이터와 GUI를 묶어서 관리하는 클래스 정의
+    private class RoomData {
+        JTextArea area;
+        ArrayList<String> history = new ArrayList<>(); // 이 방만의 로그 기록
+        
+        public RoomData(JTextArea area) {
+            this.area = area;
+        }
+    }
+
+    // 메인 로그용
+    private JTextArea mainLogArea;
+    private ArrayList<String> mainLogHistory = new ArrayList<>();
+
+    // 방 관리용 맵 (ID -> RoomData)
+    private Map<Integer, RoomData> roomDataMap = new HashMap<>();
     
-    // 모든 로그 기록을 저장할 리스트 (메인 로그용)
-    private ArrayList<String> logHistory = new ArrayList<>();
-    
-    // 날짜 포맷
     private SimpleDateFormat sdf = new SimpleDateFormat("[HH:mm:ss] ");
 
     public GameServer() {
         super("다빈치코드 서버 (관리자 모드)");
-        instance = this; // ★ 나 자신을 전역 변수에 할당
+        instance = this;
 
-        setSize(900, 600); // 탭 공간 확보를 위해 조금 더 키움
+        setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         
         // [상단] 필터링 패널
         JPanel topPanel = new JPanel();
-        topPanel.add(new JLabel("메인 로그 필터: "));
+        topPanel.add(new JLabel("로그 필터 (모든 탭 적용): "));
         
-        // 필터 종류 설정
         String[] filters = {"ALL (전체)", "SYS (시스템)", "CONN (접속/퇴장)", "CHAT (채팅)", "GAME (게임로직)", "ERR (에러)"};
         filterCombo = new JComboBox<>(filters);
         
-        // 필터 선택 시 화면 갱신 이벤트
-        filterCombo.addActionListener(e -> refreshLogArea());
+        // 필터 변경 시 모든 탭 새로고침
+        filterCombo.addActionListener(e -> refreshAllLogs());
         
         topPanel.add(filterCombo);
         add(topPanel, BorderLayout.NORTH);
 
-        // [중앙] 탭 패널 구성
+        // [중앙] 탭 패널
         tabbedPane = new JTabbedPane();
 
-        // 1. 메인 로그 탭 생성
+        // 1. 메인 로그 탭
         mainLogArea = createLogArea();
         tabbedPane.addTab("메인 로그", new JScrollPane(mainLogArea));
 
@@ -71,68 +78,118 @@ public class GameServer extends JFrame {
 
         redirectSystemStreams();
 
-        // 서버 로직 스레드 시작
         new Thread(this::runServer).start();
     }
 
-    // [유틸] 로그창(TextArea) 생성 헬퍼 메서드 (통일된 디자인)
     private JTextArea createLogArea() {
         JTextArea area = new JTextArea();
         area.setEditable(false);
-        // 가독성을 위해 고정폭 글꼴 사용 권장
         area.setFont(new Font("Monospaced", Font.PLAIN, 14)); 
         return area;
     }
 
-    // ★ [기능 1] 새로운 방 탭 추가 (Lobby에서 방 만들 때 호출)
+    // 방 탭 추가 (데이터 구조 변경됨)
     public void addRoomTab(int roomId, String title) {
         SwingUtilities.invokeLater(() -> {
-            // 이미 존재하면 생성 안 함
-            if (roomLogs.containsKey(roomId)) return;
+            if (roomDataMap.containsKey(roomId)) return;
 
-            JTextArea roomLog = createLogArea();
-            roomLogs.put(roomId, roomLog);
+            JTextArea roomLogArea = createLogArea();
             
-            // 탭 추가: "Room [번호]"
-            tabbedPane.addTab("Room " + roomId, new JScrollPane(roomLog));
+            // 데이터 객체 생성 및 맵에 저장
+            RoomData data = new RoomData(roomLogArea);
+            roomDataMap.put(roomId, data);
             
-            // 탭 내부에 기본 정보 출력
-            roomLog.append("=== [" + title + "] 방이 생성되었습니다 ===\n");
+            // 탭 추가
+            tabbedPane.addTab("Room " + roomId, new JScrollPane(roomLogArea));
             
-            // (선택사항) 방금 만든 탭으로 자동 이동하고 싶으면 아래 주석 해제
-            // tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
+            // 초기 로그 기록
+            String initMsg = "=== [" + title + "] 방이 생성되었습니다 ===\n";
+            data.history.add(initMsg);
+            roomLogArea.append(initMsg);
         });
     }
 
-    // ★ [기능 2] 방 탭 삭제 (방 폭파 시 호출)
+    // 방 탭 제거
     public void removeRoomTab(int roomId) {
         SwingUtilities.invokeLater(() -> {
             int index = tabbedPane.indexOfTab("Room " + roomId);
             if (index != -1) {
                 tabbedPane.removeTabAt(index);
             }
-            roomLogs.remove(roomId);
+            roomDataMap.remove(roomId);
         });
     }
 
-    // ★ [기능 3] 특정 방 로그창에 글쓰기 (GameRoom에서 호출)
+    // 방 로그 추가 (필터링 적용)
     public void appendRoomLog(int roomId, String msg) {
-        JTextArea area = roomLogs.get(roomId);
-        if (area != null) {
+        RoomData data = roomDataMap.get(roomId);
+        if (data != null) {
             SwingUtilities.invokeLater(() -> {
                 String timeMsg = sdf.format(new Date()) + msg + "\n";
-                area.append(timeMsg);
-                area.setCaretPosition(area.getDocument().getLength()); // 자동 스크롤
+                
+                // 1. 역사에 저장 (무조건)
+                data.history.add(timeMsg);
+                
+                // 2. 현재 필터에 맞으면 화면에도 출력
+                if (shouldShow(timeMsg)) {
+                    data.area.append(timeMsg);
+                    data.area.setCaretPosition(data.area.getDocument().getLength());
+                }
             });
         }
     }
 
-    // 서버 실행 로직
+    // --- [로그 시스템] ---
+
+    // 메인 로그 추가
+    private void addMainLog(String text) {
+        String timeLog = text.startsWith("[") ? text : sdf.format(new Date()) + text;
+        
+        mainLogHistory.add(timeLog);
+        
+        if (shouldShow(timeLog)) {
+            mainLogArea.append(timeLog);
+            mainLogArea.setCaretPosition(mainLogArea.getDocument().getLength());
+        }
+    }
+
+    // ★ [핵심] 모든 로그 새로고침 (필터 변경 시 호출)
+    private void refreshAllLogs() {
+        // 1. 메인 로그 갱신
+        refreshTextArea(mainLogArea, mainLogHistory);
+        
+        // 2. 모든 방 로그 갱신
+        for (RoomData data : roomDataMap.values()) {
+            refreshTextArea(data.area, data.history);
+        }
+    }
+
+    // 특정 텍스트 에어리어 갱신 로직
+    private void refreshTextArea(JTextArea area, ArrayList<String> history) {
+        area.setText(""); // 싹 지우고
+        for (String log : history) {
+            if (shouldShow(log)) { // 필터 통과한 것만 다시 씀
+                area.append(log);
+            }
+        }
+        if (area.getDocument().getLength() > 0) {
+            area.setCaretPosition(area.getDocument().getLength());
+        }
+    }
+
+    // 필터 판별 로직
+    private boolean shouldShow(String log) {
+        String filter = (String) filterCombo.getSelectedItem();
+        if (filter == null || filter.startsWith("ALL")) return true;
+        
+        String keyword = filter.split(" ")[0]; 
+        return log.contains("[" + keyword + "]");
+    }
+
     private void runServer() {
         Lobby serverLobby = new Lobby();
         int port = 9999;
 
-        // server.txt 읽기
         try {
             File file = new File("server.txt");
             if (file.exists()) {
@@ -163,61 +220,20 @@ public class GameServer extends JFrame {
         }
     }
 
-    // 로그 처리 및 필터링 로직 (메인 로그용)
-
-    private void addLog(String text) {
-        String timeLog = sdf.format(new Date()) + text;
-        
-        // 기록에 저장
-        logHistory.add(timeLog);
-        
-        // 현재 필터에 맞으면 화면에 출력
-        if (shouldShow(timeLog)) {
-            mainLogArea.append(timeLog);
-            // 자동 스크롤
-            mainLogArea.setCaretPosition(mainLogArea.getDocument().getLength());
-        }
-    }
-
-    private void refreshLogArea() {
-        mainLogArea.setText(""); // 화면 지우기
-        for (String log : logHistory) {
-            if (shouldShow(log)) {
-                mainLogArea.append(log);
-            }
-        }
-        // 스크롤 맨 아래로
-        if (mainLogArea.getDocument().getLength() > 0) {
-            mainLogArea.setCaretPosition(mainLogArea.getDocument().getLength());
-        }
-    }
-
-    private boolean shouldShow(String log) {
-        String filter = (String) filterCombo.getSelectedItem();
-        if (filter.startsWith("ALL")) return true;
-        
-        // 필터링 키워드 추출 (SYS, CONN, CHAT 등)
-        String keyword = filter.split(" ")[0]; 
-        return log.contains("[" + keyword + "]");
-    }
-
-    // 시스템 출력 (System.out -> Main Log)
     private void redirectSystemStreams() {
         OutputStream out = new OutputStream() {
             private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
             @Override
             public void write(int b) throws IOException {
                 if (b == '\n') {
-                    String line = buffer.toString("UTF-8"); // 한글 깨짐 방지
+                    String line = buffer.toString("UTF-8"); 
                     buffer.reset();
-                    SwingUtilities.invokeLater(() -> addLog(line + "\n"));
+                    SwingUtilities.invokeLater(() -> addMainLog(line + "\n"));
                 } else {
                     buffer.write(b);
                 }
             }
         };
-
         try {
             PrintStream ps = new PrintStream(out, true, "UTF-8");
             System.setOut(ps);
