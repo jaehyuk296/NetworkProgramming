@@ -84,7 +84,7 @@ public class GameClient extends JFrame {
             oos.flush();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }   
     }
 
     // 방 입장 요청 전송
@@ -226,10 +226,10 @@ public class GameClient extends JFrame {
                             });
                             break;
                         case Message.ROOM_UPDATE: // <--- [핵심 추가] 방 상태 업데이트
-                            Vector<String> userInfos = (Vector<String>) msg.getPayload();
+                            Vector<String> userInfos = (Vector<String>) msg.getData1();
+                            // String hostName = (String) msg.getData2(); // 방장 이름은 data2에 있음 (필요하면 쓰세요)
+                            
                             SwingUtilities.invokeLater(() -> {
-                                // Waiting 패널의 새로운 메서드를 호출하여 UI 갱신
-                                // myPlayerID는 로그인 성공 시 GameClient에 저장되어 있어야 함
                                 waitingPanel.updatePlayers(userInfos, myPlayerID); 
                             });
                             break;
