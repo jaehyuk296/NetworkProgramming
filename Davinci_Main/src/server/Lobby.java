@@ -21,77 +21,49 @@ public class Lobby {
         GameRoom newRoom = new GameRoom(roomCounter++, roomTitle, host);
         roomList.add(newRoom);
         
-        // 1. 방장의 currentRoom 설정 (GameRoom 참조 주입)
         host.setRoom(newRoom); 
-        
-        // 2. 로비 유저 목록에서 방장을 제거 (로비 채팅과 방 채팅 분리)
         lobbyUsers.remove(host); 
         
-        // 로비에 남아있는 유저들에게 방 목록 갱신
-        broadcastRoomList();
+        // 방장에게 화면 전환 신호 전송
+        host.sendMessage(new Message(Message.RES_CREATE_SUCCESS, newRoom.getRoomId()));
         
-        // ★ [추가] 서버 관리자 GUI에 '방 탭' 추가 요청
-        if (GameServer.instance != null) {
-            GameServer.instance.addRoomTab(newRoom.getRoomId(), roomTitle);
-        }
+        broadcastRoomList(); // 로비 갱신
     }
     
-    public synchronized void removeRoom(int roomId) {
-        System.out.println("[LOBBY] 방 폭파 요청: ID " + roomId);
-        
-        // 1. roomId를 사용하여 roomList에서 해당 GameRoom 객체를 찾아서 제거
-        GameRoom roomToRemove = null;
-        
-        // Vector를 순회하며 제거할 방을 찾습니다.
-        for (GameRoom room : roomList) {
-            if (room.getRoomId() == roomId) {
-                roomToRemove = room;
-                break;
-            }
-        }
-        
-        if (roomToRemove != null) {
-            // 방을 Vector에서 제거합니다.
-            roomList.remove(roomToRemove);
-            
-            System.out.println("[LOBBY] 방 " + roomToRemove.getRoomId() + " (ID: " + roomId + ") 이(가) 목록에서 제거되었습니다.");
-            
-            // 2. 모든 로비 유저에게 갱신된 방 목록을 브로드캐스트
-            broadcastRoomList();
-            
-            // ★ [추가] 서버 관리자 GUI에서 '방 탭' 삭제 요청
-            if (GameServer.instance != null) {
-                GameServer.instance.removeRoomTab(roomId);
-            }
-            
+    public synchronized void joinRoom(ClientHandler user, int roomId) {
+        GameRoom room = getRoom(roomId);
+        if (room != null && room.getUserCount() < 4) {
+            lobbyUsers.remove(user);
+            user.setRoom(room);
+            room.enterUser(user);
         } else {
-            System.err.println("[LOBBY] 경고: 존재하지 않는 방 ID (" + roomId + ") 제거 요청을 받았습니다.");
+            // 실패 처리 (생략 가능)
         }
+    }
+
+    public synchronized void removeRoom(int roomId) {
+        roomList.removeIf(r -> r.getRoomId() == roomId);
+        System.out.println("[LOBBY] 방 삭제됨: " + roomId);
+        broadcastRoomList();
     }
     
     public void sendRoomList(ClientHandler handler) {
         Vector<Vector<String>> roomData = new Vector<>();
-        for (GameRoom room : roomList) {
-            roomData.add(room.getRoomInfo());
-        }
-        
-        handler.sendMessage(new Message(Message.SRES_ROOM_LIST, "RoomList", roomData));
+        for (GameRoom room : roomList) roomData.add(room.getRoomInfo());
+        handler.sendMessage(new Message(Message.SRES_ROOM_LIST, roomData));
     }
 
     public void broadcastRoomList() {
         Vector<Vector<String>> roomData = new Vector<>();
-        for (GameRoom room : roomList) {
-            roomData.add(room.getRoomInfo());
-        }
-        
-        Message msg = new Message(Message.SRES_ROOM_LIST, "RoomList", roomData);
+        for (GameRoom room : roomList) roomData.add(room.getRoomInfo());
+        Message msg = new Message(Message.SRES_ROOM_LIST, roomData);
         
         for (ClientHandler user : lobbyUsers) {
             user.sendMessage(msg);
         }
     }
     
-    public synchronized GameRoom getRoom(int roomId) {
+    public GameRoom getRoom(int roomId) {
         for(GameRoom r : roomList) {
             if(r.getRoomId() == roomId) return r;
         }
