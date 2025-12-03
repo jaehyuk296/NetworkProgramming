@@ -83,12 +83,7 @@ public class ClientHandler extends Thread {
                     case Message.REQ_START_GAME:
                         if(currentRoom != null) currentRoom.startGame();
                         break;
-                    case Message.REQ_DRAW: // "COLOR:INDEX"
-                        if(currentRoom != null) currentRoom.handleDraw(this, (String)msg.getData1());
-                        break;
-                    case Message.REQ_GUESS: // "Target:Idx:Val"
-                        if(currentRoom != null) currentRoom.handleGuess(this, (String)msg.getData1());
-                        break;
+
                 }
             }
         } catch (Exception e) {

@@ -9,35 +9,49 @@ public class RoomUserManager {
     private Vector<ClientHandler> userList = new Vector<>();
     private Map<String, Boolean> readyState = new HashMap<>();
     private String hostName;
+    private int roomId;
+    private int maxUser = 4; // 필드 선언 확인
+    
     private RoomBroadcaster broadcaster;
 
     public RoomUserManager(int roomId) {
+        this.roomId = roomId;
         this.broadcaster = new RoomBroadcaster(userList, roomId);
     }
 
-    public void setHost(String name) { this.hostName = name; }
+    // Getter & Setter
+    public void setHostName(String name) { this.hostName = name; }
+    public String getHostName() { return hostName; }
     public Vector<ClientHandler> getUserList() { return userList; }
     public RoomBroadcaster getBroadcaster() { return broadcaster; }
     public int getUserCount() { return userList.size(); }
+    
+    public int getMaxUser() { return maxUser; }
 
     public void enterUser(ClientHandler handler) {
         userList.add(handler);
         readyState.put(handler.getNickname(), false);
-        broadcaster.log(handler.getNickname() + " 입장");
+        
         broadcastRoomState();
+        
+        handler.sendMessage(new Message(Message.RES_JOIN_SUCCESS, roomId));
+        
+        broadcaster.roomLog(handler.getNickname() + "님이 입장했습니다. (현재 " + userList.size() + "명)");
     }
 
     public boolean exitUser(ClientHandler handler) {
         userList.remove(handler);
         readyState.remove(handler.getNickname());
-        broadcaster.log(handler.getNickname() + " 퇴장");
+        
+        broadcaster.roomLog(handler.getNickname() + "님이 퇴장했습니다.");
 
-        if (userList.isEmpty()) return true;
+        if (userList.size() == 0) return true;
 
         if (handler.getNickname().equals(hostName)) {
             hostName = userList.get(0).getNickname();
-            broadcaster.broadcastChat("[System] 방장이 " + hostName + "님으로 변경되었습니다.");
+            broadcaster.roomLog("방장이 변경되었습니다: " + hostName);
         }
+        
         broadcastRoomState();
         return false;
     }
@@ -53,14 +67,16 @@ public class RoomUserManager {
 
     public void broadcastRoomState() {
         Vector<String> userInfos = new Vector<>();
+        
         for (ClientHandler user : userList) {
             String nick = user.getNickname();
-            String isReady = readyState.getOrDefault(nick, false) ? "ON" : "OFF";
-            String role = nick.equals(hostName) ? "HOST" : "MEMBER";
-            userInfos.add(nick + ":" + isReady + ":" + role);
+            boolean isUserReady = readyState.getOrDefault(nick, false);
+            String isReady = isUserReady ? "ON" : "OFF";
+            String isHost = nick.equals(hostName) ? "HOST" : "MEMBER";
+            
+            userInfos.add(nick + ":" + isReady + ":" + isHost);
         }
-        // Message 생성자: (mode, data1, data2, data3)
-        // data1: List, data2: HostName, data3: null
-        broadcaster.broadcast(new Message(Message.ROOM_UPDATE, userInfos, hostName, null));
+        
+        broadcaster.broadcast(new Message(Message.ROOM_UPDATE, userInfos, hostName));
     }
 }

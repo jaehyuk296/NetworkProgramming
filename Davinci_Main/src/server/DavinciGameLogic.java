@@ -14,22 +14,23 @@ public class DavinciGameLogic {
     private int turnIndex = 0;
     private boolean isPlaying = false;
 
-    public DavinciGameLogic(RoomUserManager manager, RoomBroadcaster broadcaster) {
-        this.userManager = manager;
-        this.broadcaster = broadcaster;
+    public DavinciGameLogic(RoomUserManager userManager) {
+        this.userManager = userManager;
+        this.broadcaster = userManager.getBroadcaster();
     }
 
     public boolean isPlaying() { return isPlaying; }
 
     public void startGame() {
         Vector<ClientHandler> users = userManager.getUserList();
+        
         if (users.size() < 2) {
-            broadcaster.broadcastChat("[System] 인원이 부족합니다.");
+            broadcaster.broadcastChat("[System] 최소 2명 이상이어야 합니다.");
             return;
         }
 
         isPlaying = true;
-        broadcaster.log("=== 게임 시작 ===");
+        broadcaster.roomLog("=== 게임 시작 ===");
         
         initializeDeck();
         userHands.clear();
@@ -42,12 +43,11 @@ public class DavinciGameLogic {
             Collections.sort(hand);
             userHands.put(user.getNickname(), hand);
             
-            // 이름 목록
             Vector<String> names = new Vector<>();
             for(ClientHandler u : users) names.add(u.getNickname());
             
-            // data1: 내패, data2: 이름목록
             user.sendMessage(new Message(Message.GAME_START, hand, names));
+            broadcaster.roomLog(" -> " + user.getNickname() + "에게 타일 분배 완료");
         }
 
         turnIndex = 0;
@@ -56,12 +56,13 @@ public class DavinciGameLogic {
     }
 
     public void handleDraw(ClientHandler player, String data) {
-        Vector<ClientHandler> users = userManager.getUserList();
-        ClientHandler currentTurnUser = users.get(turnIndex);
+        Vector<ClientHandler> userList = userManager.getUserList();
+        ClientHandler currentTurnUser = userList.get(turnIndex);
+        
         if (!player.equals(currentTurnUser)) return;
 
         if (currentTurnDrawnTile != null) {
-            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 이미 뽑았습니다."));
+            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 이미 타일을 뽑았습니다."));
             return;
         }
 
@@ -83,9 +84,13 @@ public class DavinciGameLogic {
             hand.add(insertIndex, drawn);
             
             this.currentTurnDrawnTile = drawn;
+
+            player.sendMessage(new Message(Message.RES_DRAW, drawn, insertIndex));
             
-            player.sendMessage(new Message(Message.RES_DRAW, drawn, insertIndex, null));
             broadcaster.broadcastChat("[System] " + player.getNickname() + "님이 " + color + " 타일을 가져갔습니다.");
+            broadcaster.roomLog(player.getNickname() + "님이 " + color + " 타일 드로우");
+        } else {
+            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 해당 색상 타일이 없습니다."));
         }
     }
 
@@ -108,13 +113,14 @@ public class DavinciGameLogic {
         if (isCorrect) {
             actualTile.setRevealed(true);
             broadcaster.broadcastChat("[System] " + guesser.getNickname() + "님이 맞췄습니다!");
+            broadcaster.roomLog(guesser.getNickname() + " 추리 성공 -> " + targetID + "의 타일 공개");
             
-            // data1: "ID:Index", data2: Tile
             String revealInfo = targetID + ":" + targetIndex;
-            broadcaster.broadcast(new Message(Message.BCAST_REVEAL, revealInfo, actualTile, null));
+            broadcaster.broadcast(new Message(Message.BCAST_REVEAL, revealInfo, actualTile));
             
         } else {
             broadcaster.broadcastChat("[System] " + guesser.getNickname() + "님이 틀렸습니다!");
+            broadcaster.roomLog(guesser.getNickname() + " 추리 실패");
             
             if (currentTurnDrawnTile != null) {
                 currentTurnDrawnTile.setRevealed(true);
@@ -122,7 +128,7 @@ public class DavinciGameLogic {
                 int myIndex = myHand.indexOf(currentTurnDrawnTile);
                 
                 String myInfo = guesser.getNickname() + ":" + myIndex;
-                broadcaster.broadcast(new Message(Message.BCAST_REVEAL, myInfo, currentTurnDrawnTile, null));
+                broadcaster.broadcast(new Message(Message.BCAST_REVEAL, myInfo, currentTurnDrawnTile));
             }
             nextTurn();
         }
@@ -138,8 +144,9 @@ public class DavinciGameLogic {
         Vector<ClientHandler> users = userManager.getUserList();
         if (users.isEmpty()) return;
         String current = users.get(turnIndex).getNickname();
+        
+        broadcaster.roomLog("턴 변경: 현재 턴 -> " + current);
         broadcaster.broadcast(new Message(Message.TURN_START, current));
-        broadcaster.log("현재 턴: " + current);
     }
 
     private void initializeDeck() {
