@@ -83,6 +83,21 @@ public class ClientHandler extends Thread {
                     case Message.REQ_START_GAME:
                         if(currentRoom != null) currentRoom.startGame();
                         break;
+                        
+                    case Message.REQ_DRAW:
+                    	if (currentRoom != null) {
+                            String drawData = (String) msg.getData1();
+                            currentRoom.handleDraw(this, drawData);
+                        }
+                    	break;
+                    	
+                    case Message.REQ_GUESS:
+                        currentRoom.handleGuess(this, (String) msg.getData1());
+                        break;
+                        
+                    case Message.TURN_TIMEOUT:
+                    	currentRoom.handleTimeout(this);
+                    	break;
 
                 }
             }

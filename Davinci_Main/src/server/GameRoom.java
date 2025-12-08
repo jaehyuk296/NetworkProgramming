@@ -50,6 +50,14 @@ public class GameRoom {
     public void handleGuess(ClientHandler guesser, String data) {
         gameLogic.handleGuess(guesser, data);
     }
+    
+    public void handleEndTurn(ClientHandler player) {
+        gameLogic.handleEndTurn(player);
+    }
+
+    public void handleTimeout(ClientHandler player) {
+    	gameLogic.handleTimeout(player);
+    }
 
     public Vector<String> getRoomInfo() {
         Vector<String> info = new Vector<>();
