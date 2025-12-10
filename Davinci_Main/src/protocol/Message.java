@@ -22,6 +22,7 @@ public class Message implements Serializable {
     public static final int REQ_READY = 3003;        // 준비 버튼 클릭
     public static final int REQ_EXIT_ROOM = 3004;    // 방 나가기
     public static final int REQ_START_GAME = 3005;   // 게임 시작 요청 (방장만 가능)
+	public static final int RES_JOIN_FAIL = 3006;	// 방 입장 실패 (게임 중이거나 인원 초과 등)
 
     // 게임 전용 프로토콜
     public static final int GAME_START = 4000;     // 서버 -> 클라: "게임 시작! (내 타일 정보 포함)"
@@ -32,7 +33,8 @@ public class Message implements Serializable {
     public static final int REQ_GUESS = 4005;      // 클라 -> 서버: "추리 요청" (데이터: "타겟ID:인덱스:추측값")
     public static final int BCAST_REVEAL = 4006;   // 서버 -> 클라(전체): "타일 공개 알림" (데이터: 공개된 타일 정보)
     public static final int GAME_OVER = 4007;      // 서버 -> 클라(전체): "게임 종료" (데이터: 승자 이름)
-    
+    public static final int REQ_END_TURN = 4008;   // 클라 -> 서버: "추리 그만하고 턴 넘길래"
+	public static final int BCAST_DRAW = 4009;	   // 서버 -> 클라(전체): "타일 드로우 및 삽입 알림" (데이터: [ID, Color, Index])
     
     // --- 데이터 ---
 	private int mode;

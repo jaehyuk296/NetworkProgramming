@@ -222,6 +222,18 @@ public class GameClient extends JFrame {
                                 lobbyPanel.updateRoomList(rooms);
                             });
                             break;
+
+                        case Message.RES_JOIN_FAIL: // 방 입장 실패 처리 따로 추가했어 - 재혁
+                            String failReason = (String) msg.getData1();
+                            SwingUtilities.invokeLater(() -> {
+                                JOptionPane.showMessageDialog(
+                                    GameClient.this, 
+                                    failReason, 
+                                    "입장 실패", 
+                                    JOptionPane.WARNING_MESSAGE
+                                );
+                            });
+                            break;
                             
                         // [추가] 방 만들기 성공 -> 대기방 이동
                         case Message.RES_CREATE_SUCCESS:

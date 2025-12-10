@@ -95,6 +95,12 @@ public class ClientHandler extends Thread {
                         currentRoom.handleGuess(this, (String) msg.getData1());
                         break;
                         
+                    case Message.REQ_END_TURN:
+                        if (currentRoom != null) {
+                            currentRoom.handleEndTurn(this);
+                        }
+                        break;
+                    
                     case Message.TURN_TIMEOUT:
                     	currentRoom.handleTimeout(this);
                     	break;
