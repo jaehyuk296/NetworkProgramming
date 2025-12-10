@@ -35,6 +35,7 @@ public class Message implements Serializable {
     public static final int GAME_OVER = 4007;      // 서버 -> 클라(전체): "게임 종료" (데이터: 승자 이름)
     public static final int REQ_END_TURN = 4008;   // 클라 -> 서버: "추리 그만하고 턴 넘길래"
 	public static final int BCAST_DRAW = 4009;	   // 서버 -> 클라(전체): "타일 드로우 및 삽입 알림" (데이터: [ID, Color, Index])
+	public static final int REQ_JOKER_POSITION = 4010; // 클라 -> 서버: "조커 위치 설정" (데이터: "색상:인덱스")
     
     // --- 데이터 ---
 	private int mode;

@@ -91,6 +91,13 @@ public class ClientHandler extends Thread {
                         }
                     	break;
                     	
+                    case Message.REQ_JOKER_POSITION:
+                    	if (currentRoom != null) {
+                            String jokerData = (String) msg.getData1();
+                            currentRoom.handleJokerPosition(this, jokerData);
+                        }
+                    	break;
+                    	
                     case Message.REQ_GUESS:
                         currentRoom.handleGuess(this, (String) msg.getData1());
                         break;

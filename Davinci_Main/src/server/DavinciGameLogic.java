@@ -37,24 +37,55 @@ public class DavinciGameLogic {
         }
 
         isPlaying = true;
-        broadcaster.roomLog("=== 게임 시작 ===");
+        broadcaster.roomLog("=== 게임 시작 (초기 분배: 조커 제외) ===");
         
-        // 1. 덱 초기화
-        initializeDeck();
         userHands.clear();
+        deck.clear(); // 메인 덱 초기화
 
-        // 2. 타일 분배 (4개씩) 및 정렬
+        // ★ [규칙 적용] 인원수에 따른 초기 타일 개수 설정
+        // 4명일 경우 3개씩, 2~3명일 경우 4개씩 분배
+        int tilesPerUser = (users.size() == 4) ? 3 : 4;
+
+        // ---------------------------------------------------------
+        // [수정된 로직] 1. 일반 타일(0~11)로만 임시 덱 생성
+        // ---------------------------------------------------------
+        Stack<Tile> tempDeck = new Stack<>();
+        for (int i = 0; i <= 11; i++) {
+            tempDeck.add(new Tile("BLACK", i));
+            tempDeck.add(new Tile("WHITE", i));
+        }
+        // 일반 타일만 섞음
+        Collections.shuffle(tempDeck);
+
+        // ---------------------------------------------------------
+        // [수정된 로직] 2. 플레이어들에게 타일 분배 (조커 절대 안 나옴)
+        // ---------------------------------------------------------
         for (ClientHandler user : users) {
             Vector<Tile> hand = new Vector<>();
-            for (int k = 0; k < 4; k++) {
-                if (!deck.isEmpty()) hand.add(deck.pop());
+            // ★ 설정한 tilesPerUser 만큼 반복
+            for (int k = 0; k < tilesPerUser; k++) { 
+                if (!tempDeck.isEmpty()) {
+                    hand.add(tempDeck.pop());
+                }
             }
-            // 초기 타일 정렬 (숫자 오름차순)
+            // 받은 패 정렬 (숫자 오름차순)
             Collections.sort(hand);
             userHands.put(user.getNickname(), hand);
         }
         
-        // 3. 각 유저에게 패 전송 (상대방 패는 색상만 전송)
+        // ---------------------------------------------------------
+        // [수정된 로직] 3. 남은 타일에 조커를 추가하고 다시 섞음 (메인 덱 생성)
+        // ---------------------------------------------------------
+        this.deck.addAll(tempDeck); // 남은 일반 타일 옮기기
+        this.deck.add(new Tile("BLACK", -1)); // 조커 추가
+        this.deck.add(new Tile("WHITE", -1)); // 조커 추가
+        
+        // 이제 조커가 포함된 상태로 다시 섞음 (앞으로 뽑을 때 조커 등장 가능)
+        Collections.shuffle(this.deck);
+        
+        // ---------------------------------------------------------
+        // 4. 각 유저에게 정보 전송 (기존 로직 동일)
+        // ---------------------------------------------------------
         for (ClientHandler user : users) {
             String myID = user.getNickname();
             Vector<Tile> myHand = userHands.get(myID);
@@ -77,10 +108,10 @@ public class DavinciGameLogic {
             }
             
             user.sendMessage(new Message(Message.GAME_START, myHand, names, otherColors));
-            broadcaster.roomLog(" -> " + myID + "에게 타일 분배 완료");
+            broadcaster.roomLog(" -> " + myID + "에게 타일 분배 완료 (" + tilesPerUser + "개)");
         }
 
-        // 4. 첫 턴 준비
+        // 5. 첫 턴 준비
         turnIndex = 0;
         prepareNextTurn();
     }
@@ -99,6 +130,14 @@ public class DavinciGameLogic {
             return;
         }
 
+        // 덱이 비었는지 확인
+        if (deck.isEmpty()) {
+            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 더 이상 가져올 타일이 없습니다. 바로 추리하세요."));
+            // 드로우한 타일이 없음을 명시 (이미 null이겠지만 확실히)
+            currentTurnDrawnTile = null; 
+            return;
+        }
+
         String[] parts = data.split(":");
         String color = parts[0];
         int insertIndex = Integer.parseInt(parts[1]);
@@ -113,19 +152,61 @@ public class DavinciGameLogic {
         }
 
         if (drawn != null) {
-        // ... (기존 로직: hand.add(insertIndex, drawn) 및 currentTurnDrawnTile 저장) ...
+        // 이번 턴에 뽑은 타일 저장
+        currentTurnDrawnTile = drawn;
+        
+        // ★ 조커인 경우: 위치가 정해질 때까지 상대방에게 알리지 않음 ★
+        if (drawn.isJoker()) {
+            // 조커는 일단 패에 추가하지 않고, 클라이언트에서 위치를 지정할 때까지 대기
+            // 클라이언트에게만 조커 정보 전송 (상대방에게는 아직 브로드캐스트 안 함)
+            player.sendMessage(new Message(Message.RES_DRAW, drawn, -1)); // 인덱스는 -1로 전송 (아직 미정)
+            broadcaster.broadcastChat("[System] " + player.getNickname() + "님이 조커를 가져갔습니다.");
+            broadcaster.roomLog(player.getNickname() + "님이 조커 드로우 (위치 미정)");
+            return; // 조커는 handleJokerPosition에서 처리
+        }
+        
+        // 일반 타일 처리
+        // 타일을 패에 추가
+        Vector<Tile> hand = userHands.get(player.getNickname());
+        if (insertIndex < 0 || insertIndex > hand.size()) {
+            insertIndex = hand.size();
+        }
+        hand.add(insertIndex, drawn);
+        
+        // ★ 조커를 제외한 타일들만 정렬 ★
+        sortTilesExcludingJokers(hand);
+        
+        // 정렬 후 실제 인덱스 찾기 (본인에게 전송할 정확한 위치)
+        int sortedIndex = hand.indexOf(drawn);
+        
+        // ★ 정렬 후 공개된 타일들의 새로운 인덱스 계산 및 업데이트 ★
+        // 공개된 타일들이 정렬로 인해 위치가 변경되었을 수 있으므로 업데이트
+        // 단, 조커는 정렬에서 제외되므로 공개된 조커는 업데이트하지 않음
+        for (int i = 0; i < hand.size(); i++) {
+            Tile t = hand.get(i);
+            if (t.isRevealed() && t != drawn && !t.isJoker()) {
+                // 공개된 타일의 새로운 인덱스를 전송 (본인에게만, 조커 제외)
+                String revealInfo = player.getNickname() + ":" + i;
+                player.sendMessage(new Message(Message.BCAST_REVEAL, revealInfo, t));
+            }
+        }
+        
+        // ★ 상대방에게는 실제 정렬된 순서의 인덱스를 그대로 전송 ★
+        // 상대방은 숫자를 모르지만, 정렬된 순서의 색상 정보를 그대로 보여야 함
+        // (색상 기준으로 재정렬하지 않고 실제 정렬 순서 유지)
+        int opponentIndex = sortedIndex;
         
         // 1. 클라이언트(본인)에게 결과 전송 (전체 정보)
-        player.sendMessage(new Message(Message.RES_DRAW, drawn, insertIndex));
+        player.sendMessage(new Message(Message.RES_DRAW, drawn, sortedIndex));
         
         // 2. ★ 상대방에게 갱신 정보 브로드캐스트 추가 ★
-        // Message.BCAST_DRAW 모드를 사용하여, 어떤 유저가, 어떤 색상의 타일을,
-        // 몇 번째 위치에 삽입했는지 알립니다.
-        // 데이터 구조: [뽑은 사람 ID, 타일 색상, 삽입 인덱스]
+        // 상대방은 색상만 알 수 있지만, 실제 정렬된 순서(숫자+색상 기준)의 인덱스를 전송
+        // 이렇게 하면 상대방이 보는 타일 순서가 내 타일의 실제 정렬 순서와 일치함
+        // 데이터 구조: [뽑은 사람 ID, 타일 색상, 정렬된 인덱스]
         Vector<Object> broadcastData = new Vector<>();
         broadcastData.add(player.getNickname());
         broadcastData.add(drawn.getColor());
-        broadcastData.add(insertIndex); 
+        broadcastData.add(opponentIndex); 
         
         broadcaster.broadcast(new Message(Message.BCAST_DRAW, broadcastData)); // Message.BCAST_DRAW는 Message.java에 정의 필요
         
@@ -135,6 +216,70 @@ public class DavinciGameLogic {
     }else {
             player.sendMessage(new Message(Message.CHAT_MSG, "[System] 해당 색상의 타일이 없습니다."));
         }
+    }
+    
+    // [2-1] 조커 위치 설정 로직 (조커를 뽑은 후 클라이언트에서 위치를 지정했을 때)
+    public void handleJokerPosition(ClientHandler player, String data) {
+        Vector<ClientHandler> users = userManager.getUserList();
+        ClientHandler currentTurnUser = users.get(turnIndex);
+        
+        // 내 턴 검증
+        if (!player.equals(currentTurnUser)) return;
+        
+        // 조커를 뽑았는지 검증
+        if (currentTurnDrawnTile == null || !currentTurnDrawnTile.isJoker()) {
+            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 조커를 뽑지 않았습니다."));
+            return;
+        }
+        
+        String[] parts = data.split(":");
+        String color = parts[0];
+        int insertIndex = Integer.parseInt(parts[1]);
+        
+        // 조커 색상 확인
+        if (!currentTurnDrawnTile.getColor().equals(color)) {
+            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 조커 색상이 일치하지 않습니다."));
+            return;
+        }
+        
+        // 조커를 패에 추가 (handleDraw에서 추가하지 않았으므로 여기서 추가)
+        Vector<Tile> hand = userHands.get(player.getNickname());
+        
+        // 지정된 인덱스에 조커 삽입
+        if (insertIndex < 0 || insertIndex > hand.size()) {
+            insertIndex = hand.size();
+        }
+        hand.add(insertIndex, currentTurnDrawnTile);
+        
+        // ★ 조커를 제외한 타일들만 정렬 ★
+        sortTilesExcludingJokers(hand);
+        
+        // 정렬 후 실제 인덱스 찾기
+        int sortedIndex = hand.indexOf(currentTurnDrawnTile);
+        
+        // ★ 정렬 후 공개된 타일들의 새로운 인덱스 계산 및 업데이트 ★
+        // 공개된 타일들이 정렬로 인해 위치가 변경되었을 수 있으므로 업데이트
+        // 단, 조커는 정렬에서 제외되므로 공개된 조커는 업데이트하지 않음
+        for (int i = 0; i < hand.size(); i++) {
+            Tile t = hand.get(i);
+            if (t.isRevealed() && t != currentTurnDrawnTile && !t.isJoker()) {
+                // 공개된 타일의 새로운 인덱스를 전송 (본인에게만, 조커 제외)
+                String revealInfo = player.getNickname() + ":" + i;
+                player.sendMessage(new Message(Message.BCAST_REVEAL, revealInfo, t));
+            }
+        }
+        
+        // ★ 상대방에게는 실제 정렬된 순서의 인덱스를 그대로 전송 ★
+        int opponentIndex = sortedIndex;
+        
+        // ★ 상대방에게 갱신 정보 브로드캐스트 (조커 위치 업데이트) ★
+        Vector<Object> broadcastData = new Vector<>();
+        broadcastData.add(player.getNickname());
+        broadcastData.add(currentTurnDrawnTile.getColor());
+        broadcastData.add(opponentIndex);
+        
+        broadcaster.broadcast(new Message(Message.BCAST_DRAW, broadcastData));
+        broadcaster.roomLog(player.getNickname() + "님이 조커 위치 설정 (위치: " + insertIndex + " -> 정렬 후: " + sortedIndex + ")");
     }
 
     // [3] 추리 로직
@@ -202,30 +347,26 @@ public class DavinciGameLogic {
     
     // [4] 턴 종료 요청 (클라이언트가 "턴 넘기기" 버튼 클릭 시)
     public void handleEndTurn(ClientHandler player) {
-        Vector<ClientHandler> users = userManager.getUserList();
-        
-        // 1. 내 턴인지 확인
-        if (!player.equals(users.get(turnIndex))) return; 
+    Vector<ClientHandler> users = userManager.getUserList();
+    if (!player.equals(users.get(turnIndex))) return; 
 
-        // ★ [수정된 규칙 적용] ★
-        
-        // Case 1: 드로우 자체를 하지 않은 경우 (이럴 리는 없으나 방어 코드)
-        if (currentTurnDrawnTile == null) {
-            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 타일을 뽑아야만 게임 진행이 가능합니다."));
-            return; 
-        }
-        
-        // Case 2: 드로우는 했으나, 추리 성공 기록이 없는 경우
-        // (성공 기록이 없다는 것은 추리를 아예 안 했거나, 추리할 기회가 없었다는 뜻)
-        if (!hasGuessedCorrectly) {
-            player.sendMessage(new Message(Message.CHAT_MSG, "[System] 타일을 뽑은 후 최소 1번은 추리해야 턴을 넘길 수 있습니다."));
-            return;
-        }
-        
-        // Case 3: 드로우 했고, 추리 성공 기록도 있는 경우 -> 턴 종료 허용
-        broadcaster.broadcastChat("[System] " + player.getNickname() + "님이 턴을 마쳤습니다.");
-        nextTurn();
+    // [수정] 덱이 남아있는데 드로우를 안 했으면 에러 (기존 로직 유지)
+    if (!deck.isEmpty() && currentTurnDrawnTile == null) {
+        player.sendMessage(new Message(Message.CHAT_MSG, "[System] 타일을 뽑아야 합니다."));
+        return;
     }
+
+    // ★ [핵심 수정] 덱에서 타일을 뽑았는데, 한 번도 맞추지 않았다면 턴 종료 불가
+    // (덱이 비어서 못 뽑은 경우는 예외적으로 추리만 하므로 이 조건 패스)
+    if (currentTurnDrawnTile != null && !hasGuessedCorrectly) {
+        player.sendMessage(new Message(Message.CHAT_MSG, "[System] 최소 한 번은 추리를 시도해야 합니다!"));
+        return; 
+    }
+    
+    // 통과 시 턴 넘김
+    broadcaster.broadcastChat("[System] " + player.getNickname() + "님이 턴을 마쳤습니다.");
+    nextTurn();
+}
     
     // 타임아웃 처리
     public void handleTimeout(ClientHandler player) {
@@ -298,17 +439,32 @@ public class DavinciGameLogic {
         broadcaster.roomLog("게임 종료 - 승자: " + winner);
     }
 
-    private void initializeDeck() {
-        deck.clear();
-        // 0~11 숫자 타일
-        for (int i = 0; i <= 11; i++) {
-            deck.add(new Tile("BLACK", i));
-            deck.add(new Tile("WHITE", i));
-        }
-        // 조커 타일
-        deck.add(new Tile("BLACK", -1));
-        deck.add(new Tile("WHITE", -1));
+    // ★ 조커를 제외한 타일들만 정렬하는 헬퍼 메서드 ★
+    private void sortTilesExcludingJokers(Vector<Tile> tiles) {
+        // 조커의 인덱스와 타일을 저장 (인덱스는 오름차순으로 저장)
+        Vector<Integer> jokerIndices = new Vector<>();
+        Vector<Tile> jokers = new Vector<>();
         
-        Collections.shuffle(deck);
+        // 조커 찾기 및 제거 (뒤에서부터 제거하여 인덱스 변화 최소화)
+        for (int i = tiles.size() - 1; i >= 0; i--) {
+            Tile t = tiles.get(i);
+            if (t.isJoker()) {
+                jokerIndices.add(0, i); // 오름차순으로 저장
+                jokers.add(0, tiles.remove(i));
+            }
+        }
+        
+        // 숫자 타일들만 정렬
+        Collections.sort(tiles);
+        
+        // 조커를 원래 인덱스에 다시 삽입 (뒤에서부터 삽입하여 인덱스 변화 최소화)
+        for (int i = jokers.size() - 1; i >= 0; i--) {
+            int originalIndex = jokerIndices.get(i);
+            // 원래 인덱스가 범위를 벗어나면 마지막에 추가
+            if (originalIndex > tiles.size()) {
+                originalIndex = tiles.size();
+            }
+            tiles.add(originalIndex, jokers.get(i));
+        }
     }
 }

@@ -85,6 +85,10 @@ public class GameRoom {
     public void handleDraw(ClientHandler player, String data) {
         gameLogic.handleDraw(player, data);
     }
+    
+    public void handleJokerPosition(ClientHandler player, String data) {
+        gameLogic.handleJokerPosition(player, data);
+    }
 
     public void handleGuess(ClientHandler guesser, String data) {
         gameLogic.handleGuess(guesser, data);

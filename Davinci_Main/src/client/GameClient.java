@@ -314,6 +314,23 @@ public class GameClient extends JFrame {
                                 inGamePanel.handleDrawResult(drawnTile, insertIdx);
                             });
                             break;
+                            
+                        case Message.BCAST_DRAW:
+                            // 서버에서 보낸 데이터: Vector<Object> [닉네임, 색상, 인덱스]
+                            // DavinciGameLogic.java에서 data1에 담아서 보냈으므로 getData1()으로 꺼냅니다.
+                            Vector<Object> drawInfo = (Vector<Object>) msg.getData1();
+                            
+                            String drawerNick = (String) drawInfo.get(0);
+                            String drawnColor = (String) drawInfo.get(1);
+                            int drawnIdx = (int) drawInfo.get(2);
+
+                            SwingUtilities.invokeLater(() -> {
+                                if (inGamePanel != null) {
+                                    // InGameUI에 상대방 타일 추가 요청
+                                    inGamePanel.handleOpponentDraw(drawerNick, drawnColor, drawnIdx);
+                                }
+                            });
+                            break;
 
                         case Message.BCAST_REVEAL:
                             // 타일 공개 알림

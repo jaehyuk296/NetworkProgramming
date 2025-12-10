@@ -1,7 +1,6 @@
 package client;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -26,6 +25,7 @@ public class InGameUI extends JPanel {
     private JPanel actionPanel;
     private JLabel lblTurnInfo;
     private JButton b_getBlack, b_getWhite;
+    private JButton b_endTurn;
     
     private JTextField t_guessTarget, t_guessIndex, t_guessValue;
     private JButton b_guess;
@@ -144,6 +144,15 @@ public class InGameUI extends JPanel {
         b_getWhite.setBounds(260, 30, 80, 30);
         b_getWhite.addActionListener(e -> requestDraw("WHITE"));
         actionPanel.add(b_getWhite);
+        
+        // [NEW] 턴 종료 버튼 (맞췄을 때만 활성화)
+        b_endTurn = new JButton("턴 종료");
+        b_endTurn.setBackground(Color.RED);
+        b_endTurn.setForeground(Color.WHITE);
+        b_endTurn.setBounds(260, 30, 80, 30);
+        b_endTurn.setEnabled(false); // 기본 비활성
+        b_endTurn.addActionListener(e -> requestEndTurn());
+        actionPanel.add(b_endTurn);
 
         // --- 추측 하기 ---
         JLabel l2 = new JLabel("ID:");
@@ -172,6 +181,13 @@ public class InGameUI extends JPanel {
         t_guessValue = new JTextField(); // 숫자 or JOKER
         t_guessValue.setBounds(210, 80, 50, 20);
         actionPanel.add(t_guessValue);
+        
+        b_endTurn = new JButton("턴 종료");
+        // 위치를 타일 가져오기 버튼과 겹치지 않게 수정 (예: 좌측 아래)
+        b_endTurn.setBounds(170, 120, 170, 30); // 위치 수정
+        b_endTurn.setEnabled(false); // 기본 비활성
+        b_endTurn.addActionListener(e -> requestEndTurn());
+        actionPanel.add(b_endTurn);
 
         b_guess = new JButton("추측");
         b_guess.setBounds(270, 80, 70, 25);
@@ -179,7 +195,8 @@ public class InGameUI extends JPanel {
         actionPanel.add(b_guess);
 
         add(actionPanel);
-        setMyTurn(false); // 기본 비활성화
+     // 초기 버튼 상태 비활성화
+        setButtonsEnabled(false, false, false);
     }
 
     // --- 통신 요청 메서드 ---
@@ -195,6 +212,10 @@ public class InGameUI extends JPanel {
         // Protocol: "COLOR:INDEX"
         gameClient.send(new Message(Message.REQ_DRAW, color + ":-1"));
     }
+    
+    private void requestEndTurn() {
+        gameClient.send(new Message(Message.REQ_END_TURN, myNickname));
+    }
 
     private void requestGuess() {
         String target = t_guessTarget.getText().trim();
@@ -202,7 +223,7 @@ public class InGameUI extends JPanel {
         String val = t_guessValue.getText().trim();
 
         if(target.isEmpty() || idxStr.isEmpty() || val.isEmpty()) {
-            appendChat("[시스템] 추측 정보를 모두 입력하세요.");
+            appendChat("[System] 추측 정보를 모두 입력하세요.");
             return;
         }
         // 조커 처리: JOKER라고 입력하면 -1로 변환 전송 (서버 로직에 맞춤)
@@ -247,7 +268,7 @@ public class InGameUI extends JPanel {
                     for(int k = 0; k < 4; k++) {
                         String c = colorList.get(k);
 
-                        // 숫자는 모름 -> -1 사용, 색깔만 넣기
+                        // 숫자는 모름 -> -999 사용, 색깔만 넣기
                         Tile t = new Tile(c, -999);
                         dummyHand.add(t);
                     }
@@ -261,13 +282,25 @@ public class InGameUI extends JPanel {
         repaint();
     }
 
-    // 2. 턴 시작 알림
+    // [UPDATE] 턴 시작 알림
     public void updateTurn(String currentNick) {
         boolean isMyTurn = currentNick.equals(myNickname);
-        setMyTurn(isMyTurn);
         
-        String msg = isMyTurn ? "나의 턴! 타일을 가져오거나 추측하세요." : currentNick + "의 턴입니다.";
-        lblTurnInfo.setText(msg);
+        if (isMyTurn) {
+            lblTurnInfo.setText("나의 턴! 타일을 가져오세요.");
+            lblTurnInfo.setForeground(Color.RED);
+            
+            // ★ [수정] 내 턴 시작 시: 드로우O, 추측X, 종료X
+            setButtonsEnabled(true, false, false);
+            
+        } else {
+            lblTurnInfo.setText(currentNick + "의 턴입니다.");
+            lblTurnInfo.setForeground(Color.WHITE);
+            
+            // 남의 턴: 모든 액션 불가 (턴 종료 버튼도 비활성화)
+            setButtonsEnabled(false, false, false);
+        }
+        
         lblTurnInfo.setBackground(Color.BLACK);
         
         // 타이머 리셋
@@ -276,10 +309,9 @@ public class InGameUI extends JPanel {
         turnTimer.restart();
     }
 
-    // 3. 타일 뽑기 결과 (내가 뽑았을 때)
+    // [UPDATE] 타일 뽑기 결과 처리 (내 동작)
     public void handleDrawResult(Tile tile, int index) {
-    	
-    	// 조커(Joker) 처리: number == -1 이면 조커로 취급
+        // 1. 조커 처리 로직
         if (tile.getNumber() == -1) {
             String input = JOptionPane.showInputDialog(
                     this, 
@@ -288,49 +320,158 @@ public class InGameUI extends JPanel {
                     JOptionPane.QUESTION_MESSAGE
             );
             
-            int insertIndex = myTiles.size(); // 기본: 끝에 삽입
+            int insertIndex = myTiles.size();
             try {
                 if(input != null && !input.trim().isEmpty()) {
                     insertIndex = Integer.parseInt(input.trim());
                 }
             } catch (NumberFormatException e) {
-                appendChat("[시스템] 숫자가 아닙니다. 자동으로 마지막 위치에 삽입합니다.");
+                appendChat("[System] 숫자가 아닙니다. 자동으로 마지막 위치에 삽입합니다.");
             }
 
-            // 인덱스 보정
             if(insertIndex < 0) insertIndex = 0;
             if(insertIndex > myTiles.size()) insertIndex = myTiles.size();
 
+            // 조커를 지정된 인덱스에 삽입
             myTiles.add(insertIndex, tile);
-            repaint();
-            appendChat("[시스템] 조커 타일을 " + insertIndex + "번 위치에 삽입했습니다.");
-            return;
+            
+            // 조커를 제외한 숫자 타일들만 정렬
+            sortTilesExcludingJokers(myTiles);
+            
+            // ★ 서버로 조커의 위치 정보 전송 (색상:인덱스 형식)
+            gameClient.send(new Message(Message.REQ_JOKER_POSITION, tile.getColor() + ":" + insertIndex));
+            
+        } else {
+            // 일반 타일: 조커를 제외하고 정렬
+            myTiles.add(tile);
+            sortTilesExcludingJokers(myTiles);
         }
-
-        // --- 일반 타일은 자동으로 뒤에 붙이기 ---
-        myTiles.add(tile);
         
-        Collections.sort(myTiles);
-        
+        // 2. 화면 갱신
         repaint();
-        appendChat("[시스템] 타일을 가져왔습니다. (" + tile.toString() + ")");
+        appendChat("[System] 타일을 가져왔습니다. (" + tile.toString() + ")");
+        
+        // ★ [수정] 상태 업데이트: 드로우 끝 -> 추측 가능, 턴 종료도 가능 (추측 없이도 턴 종료 가능)
+        setButtonsEnabled(false, true, false); // (Draw X, Guess O, EndTurn X)
+        lblTurnInfo.setText("타일을 배치했습니다. 반드시 추리를 시도해야 합니다.");
     }
+    
+    // ★ 조커를 제외한 타일들만 정렬하는 헬퍼 메서드 ★
+    private void sortTilesExcludingJokers(Vector<Tile> tiles) {
+        // 조커의 인덱스와 타일을 저장 (인덱스는 오름차순으로 저장)
+        Vector<Integer> jokerIndices = new Vector<>();
+        Vector<Tile> jokers = new Vector<>();
+        
+        // 조커 찾기 및 제거 (뒤에서부터 제거하여 인덱스 변화 최소화)
+        for (int i = tiles.size() - 1; i >= 0; i--) {
+            Tile t = tiles.get(i);
+            if (t.isJoker()) {
+                jokerIndices.add(0, i); // 오름차순으로 저장
+                jokers.add(0, tiles.remove(i));
+            }
+        }
+        
+        // 숫자 타일들만 정렬
+        Collections.sort(tiles);
+        
+        // 조커를 원래 인덱스에 다시 삽입 (뒤에서부터 삽입하여 인덱스 변화 최소화)
+        for (int i = jokers.size() - 1; i >= 0; i--) {
+            int originalIndex = jokerIndices.get(i);
+            // 원래 인덱스가 범위를 벗어나면 마지막에 추가
+            if (originalIndex > tiles.size()) {
+                originalIndex = tiles.size();
+            }
+            tiles.add(originalIndex, jokers.get(i));
+        }
+    }
+    
+    // [NEW] 상대방이 타일을 가져갔을 때 UI 처리
+    public void handleOpponentDraw(String nickname, String color, int index) {
+        // 나 자신이면 이미 handleDrawResult에서 처리했으므로 무시
+        if (nickname.equals(myNickname)) return;
 
-    // 4. 타일 공개 알림 (누군가 맞췄거나 틀렸을 때)
+        Vector<Tile> hand = opponentHands.get(nickname);
+        if (hand == null) return;
+
+        // 상대방 패에 '뒷면' 타일 추가 (숫자는 모르므로 -999)
+        Tile secretTile = new Tile(color, -999);
+        
+        // ★ 서버에서 보낸 실제 정렬 순서의 인덱스에 타일 추가
+        // 서버에서 정렬된 순서를 그대로 유지 (색상 기준 재정렬하지 않음)
+        // 인덱스 안전 장치 (혹시 모를 범위 초과 방지)
+        if (index < 0) index = 0;
+        if (index > hand.size()) index = hand.size();
+        
+        hand.add(index, secretTile);
+        
+        // ★ 색상 기준으로 재정렬하지 않음 - 서버에서 보낸 정렬 순서 유지
+        
+        repaint(); // 화면 갱신
+}
+
+    // [UPDATE] 타일 공개 알림 처리
     public void handleReveal(String targetID, int index, Tile tile) {
+        // 1. 데이터 갱신
         if(targetID.equals(myNickname)) {
-            // 내 타일이 공개됨
+            // 내 타일이 공개됨 (틀렸거나, 상대가 맞춤)
+            // ★ 조커는 정렬에서 제외되므로, 공개된 조커는 인덱스 업데이트하지 않음 ★
+            if(tile.isJoker()) {
+                // 조커는 정렬에서 제외되므로, 원래 위치의 조커를 찾아서 공개 처리
+                if(index < myTiles.size() && myTiles.get(index).isJoker()) {
+                    myTiles.get(index).setRevealed(true);
+                } else {
+                    // 조커를 찾아서 공개 처리
+                    for(Tile t : myTiles) {
+                        if(t.isJoker() && t.getColor().equals(tile.getColor())) {
+                            t.setRevealed(true);
+                            break;
+                        }
+                    }
+                }
+                repaint();
+                return; // 조커는 여기서 처리 완료
+            }
+            
+            // 일반 타일 처리: 정렬 후 인덱스가 변경되었을 수 있으므로, 타일 객체를 찾아서 업데이트
             if(index < myTiles.size()) {
-                myTiles.get(index).setRevealed(true);
+                Tile existingTile = myTiles.get(index);
+                // 같은 타일인지 확인 (숫자와 색상으로 비교)
+                if(existingTile.getNumber() == tile.getNumber() && 
+                   existingTile.getColor().equals(tile.getColor()) && !existingTile.isJoker()) {
+                    existingTile.setRevealed(true);
+                } else {
+                    // 인덱스가 변경되었을 수 있으므로, 타일을 찾아서 업데이트
+                    for(Tile t : myTiles) {
+                        if(t.getNumber() == tile.getNumber() && 
+                           t.getColor().equals(tile.getColor()) && !t.isJoker()) {
+                            t.setRevealed(true);
+                            break;
+                        }
+                    }
+                }
             }
         } else {
             // 상대방 타일이 공개됨
             Vector<Tile> opHand = opponentHands.get(targetID);
             if(opHand != null) {
-                // 인덱스 확장 (혹시 모를 오류 방지)
                 while(opHand.size() <= index) opHand.add(null);
-                // 해당 위치 타일을 진짜 정보로 교체
-                opHand.set(index, tile);
+                // 인덱스에 타일이 있으면 교체, 없으면 추가
+                if(opHand.get(index) != null) {
+                    opHand.set(index, tile); // 진짜 정보로 교체
+                } else {
+                    opHand.add(index, tile);
+                }
+            }
+        }
+        
+        // 내 턴일 때 로직
+        if (lblTurnInfo.getText().contains("나의 턴") || b_guess.isEnabled()) {
+            if (!targetID.equals(myNickname)) {
+                // ★ [수정] 상대방 타일을 맞춰서 공개된 경우에만 '턴 종료' 버튼 활성화
+                appendChat("[System] 추리 성공! 계속하거나 턴을 종료할 수 있습니다.");
+                setButtonsEnabled(false, true, true); // (Draw X, Guess O, EndTurn O)
+            } else {
+                // 내가 틀려서 내 타일이 공개됨 -> 곧 서버가 턴을 넘김 (버튼 조작 불필요)
             }
         }
         repaint();
@@ -339,17 +480,6 @@ public class InGameUI extends JPanel {
     public void appendChat(String msg) {
         chatArea.append(msg + "\n");
         chatArea.setCaretPosition(chatArea.getDocument().getLength());
-    }
-
-    private void setMyTurn(boolean myTurn) {
-        b_getBlack.setEnabled(myTurn);
-        b_getWhite.setEnabled(myTurn);
-        b_guess.setEnabled(myTurn);
-        t_guessTarget.setEnabled(myTurn);
-        t_guessIndex.setEnabled(myTurn);
-        t_guessValue.setEnabled(myTurn);
-        
-        lblTurnInfo.setForeground(myTurn ? Color.RED : Color.WHITE);
     }
 
     // --- 렌더링 (핵심) ---
@@ -460,4 +590,21 @@ public class InGameUI extends JPanel {
         g.setFont(new Font("Arial", Font.PLAIN, 10));
         g.drawString("[" + index + "]", x + 10, y + 55);
     }
+    
+    // [NEW] 버튼 상태를 한 번에 제어하는 헬퍼 메서드
+    private void setButtonsEnabled(boolean canDraw, boolean canGuess, boolean canEndTurn) {
+        // 드로우 버튼 제어
+        b_getBlack.setEnabled(canDraw);
+        b_getWhite.setEnabled(canDraw);
+        
+        // 추측 관련 버튼 제어
+        b_guess.setEnabled(canGuess);
+        t_guessTarget.setEnabled(canGuess);
+        t_guessIndex.setEnabled(canGuess);
+        t_guessValue.setEnabled(canGuess);
+        
+        // 턴 종료 버튼 제어
+        b_endTurn.setEnabled(canEndTurn);
+    }
 }
+
