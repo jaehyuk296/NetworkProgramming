@@ -19,7 +19,7 @@ public class Lobby {
     }
 
     public synchronized void createRoom(ClientHandler host, String roomTitle) {
-        GameRoom newRoom = new GameRoom(roomCounter++, roomTitle, host);
+        GameRoom newRoom = new GameRoom(roomCounter++, roomTitle, host, this);
         roomList.add(newRoom);
         
         // 1. 방장 이동 처리

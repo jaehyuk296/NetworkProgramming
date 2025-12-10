@@ -1,12 +1,22 @@
 package client;
 
-import javax.swing.*;
-import java.awt.*;
-import java.io.*;
+import java.awt.CardLayout;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Vector;
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+
 import protocol.Message;
+import protocol.Tile;
 
 public class GameClient extends JFrame {
     
@@ -16,7 +26,7 @@ public class GameClient extends JFrame {
     private LoginPanel loginPanel;
     private Lobby lobbyPanel;
     private Waiting waitingPanel; // [추가] 대기방 패널
-    private InGame inGamePanel;
+    private InGameUI inGamePanel;
 
     // 네트워크 관련
     private Socket socket;
@@ -68,7 +78,7 @@ public class GameClient extends JFrame {
         // 4. [추가] 대기방 화면 생성
         waitingPanel = new Waiting(this); // 팀원 코드에 맞춰 파라미터 없이 생성
         
-        inGamePanel = new InGame(this);
+        inGamePanel = new InGameUI(this);
 
         // 5. 패널 등록
         mainPanel.add(loginPanel, "LOGIN");
@@ -212,6 +222,18 @@ public class GameClient extends JFrame {
                                 lobbyPanel.updateRoomList(rooms);
                             });
                             break;
+
+                        case Message.RES_JOIN_FAIL: // 방 입장 실패 처리 따로 추가했어 - 재혁
+                            String failReason = (String) msg.getData1();
+                            SwingUtilities.invokeLater(() -> {
+                                JOptionPane.showMessageDialog(
+                                    GameClient.this, 
+                                    failReason, 
+                                    "입장 실패", 
+                                    JOptionPane.WARNING_MESSAGE
+                                );
+                            });
+                            break;
                             
                         // [추가] 방 만들기 성공 -> 대기방 이동
                         case Message.RES_CREATE_SUCCESS:
@@ -256,16 +278,63 @@ public class GameClient extends JFrame {
                                 waitingPanel.updatePlayers(latestUserInfos, myPlayerID); 
                             });
                             break;
+                         // GameClient.java 내부 ServerListener 클래스
+
                         case Message.GAME_START:                            
+                            // Data1: 내 패(Vector<Tile>), Data2: 이름목록(Vector<String>)
+                            Vector<Tile> myHand = (Vector<Tile>) msg.getData1();
+                            Vector<String> players = (Vector<String>) msg.getData2();
+                            Map<String, Vector<String>> otherColors = (Map<String, Vector<String>>) msg.getData3();
+
                             SwingUtilities.invokeLater(() -> {
-                                System.out.println("게임 시작 요청 수신. InGame 화면으로 전환.");
-                                // 1. 화면을 InGame 패널로 전환
+                                System.out.println("게임 시작!");
                                 cardLayout.show(mainPanel, "GAME");
-                                // 2. InGame 패널에 플레이어 정보 전달
-                                inGamePanel.setInitialPlayers(latestUserInfos, myPlayerID); // ⭐️ 메서드 호출
-                                // (추가: InGame.java에 appendChat이 있다면)
-                                inGamePanel.appendChat("--- 게임 시작! ---");
+                                // InGameUI 초기화 호출
+                                inGamePanel.startGame(myHand, players, otherColors, myPlayerID);
                             });
+                            break;
+
+                        case Message.TURN_START:
+                            // Data1: 현재 턴인 사람 닉네임
+                            String currentNick = (String) msg.getData1();
+                            SwingUtilities.invokeLater(() -> {
+                                inGamePanel.updateTurn(currentNick);
+                            });
+                            break;
+
+                        case Message.RES_DRAW:
+                            // 타일 뽑기 결과
+                            // Data1: Tile 객체, Data2: Index (Integer) -> Payload getter 사용 시 주의
+                            // Message 생성자를 보면 (mode, data1, payload) 순서일 수 있음. 확인 필요.
+                            // 여기선 Server 코드: new Message(RES_DRAW, drawn, insertIndex)
+                            Tile drawnTile = (Tile) msg.getData1();
+                            int insertIdx = (Integer) msg.getData2(); // data2(payload)에 인덱스
+
+                            SwingUtilities.invokeLater(() -> {
+                                inGamePanel.handleDrawResult(drawnTile, insertIdx);
+                            });
+                            break;
+
+                        case Message.BCAST_REVEAL:
+                            // 타일 공개 알림
+                            // Data1: "TargetID:Index", Data2: Tile 객체
+                            String revealInfo = (String) msg.getData1();
+                            Tile revealedTile = (Tile) msg.getData2();
+                            
+                            String[] rParts = revealInfo.split(":");
+                            String rTarget = rParts[0];
+                            int rIndex = Integer.parseInt(rParts[1]);
+
+                            SwingUtilities.invokeLater(() -> {
+                                inGamePanel.handleReveal(rTarget, rIndex, revealedTile);
+                                inGamePanel.appendChat("[시스템] " + rTarget + "님의 타일이 공개되었습니다: " + revealedTile.getNumber());
+                            });
+                            break;
+
+                        case Message.TURN_TIMEOUT:
+                        	// 서버에서 턴 넘김 알림을 보내는 경우
+                            String nextPlayer = (String) msg.getData1();
+                            inGamePanel.updateTurn(nextPlayer);
                             break;
                     }
                 }
