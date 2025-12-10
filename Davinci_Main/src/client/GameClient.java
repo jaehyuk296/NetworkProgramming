@@ -353,6 +353,7 @@ public class GameClient extends JFrame {
                             String nextPlayer = (String) msg.getData1();
                             inGamePanel.updateTurn(nextPlayer);
                             break;
+                        
                     }
                 }
             } catch (Exception e) {

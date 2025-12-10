@@ -59,7 +59,16 @@ public class ClientHandler extends Thread {
                         break;
                     case Message.REQ_JOIN_ROOM:
                         int roomId = Integer.parseInt(String.valueOf(msg.getData1()));
-                        lobby.joinRoom(this, roomId);
+                        GameRoom targetRoom = lobby.getRoom(roomId); 
+                        
+                        // ★ 방이 존재하고, 인원이 4명 이상이면 입장 거부
+                        if (targetRoom != null && targetRoom.getUserCount() >= 4) {
+                            sendMessage(new Message(Message.RES_JOIN_FAIL, "이미 게임이 진행 중인 방입니다."));
+                        } 
+                        else {
+                            // 자리가 있으면 정상적으로 입장 처리
+                            lobby.joinRoom(this, roomId);
+                        }
                         break;
 
                     // [게임방 관련] - GameRoom에게 위임
