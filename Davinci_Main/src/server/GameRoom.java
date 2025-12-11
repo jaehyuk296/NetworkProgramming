@@ -53,6 +53,10 @@ public class GameRoom {
 }
 
     public boolean exitUser(ClientHandler handler) {
+        // 게임 중일 때 퇴장 처리 위임
+        if (gameLogic.isPlaying()) {
+            gameLogic.handleUserExit(handler);
+        }
         boolean isEmpty = userManager.exitUser(handler);
         
         // 퇴장 시에도 인원수가 변하므로 로비 갱신
