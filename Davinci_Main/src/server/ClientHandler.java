@@ -47,7 +47,7 @@ public class ClientHandler extends Thread {
                 lobby.addUser(this);
             }
 
-            // 2. 메인 루프
+            // 2. 메인
             while (true) {
                 msg = (Message) ois.readObject();
                 
@@ -61,7 +61,7 @@ public class ClientHandler extends Thread {
                         int roomId = Integer.parseInt(String.valueOf(msg.getData1()));
                         GameRoom targetRoom = lobby.getRoom(roomId); 
                         
-                        // ★ 방이 존재하고, 인원이 4명 이상이면 입장 거부
+                        // 방이 존재하고, 인원이 4명 이상이면 입장 거부
                         if (targetRoom != null && targetRoom.getUserCount() >= 4) {
                             sendMessage(new Message(Message.RES_JOIN_FAIL, "이미 게임이 진행 중인 방입니다."));
                         } 

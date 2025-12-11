@@ -10,7 +10,7 @@ public class Lobby {
 
     public synchronized void addUser(ClientHandler handler) {
         lobbyUsers.add(handler);
-        // [중요] 유저 입장 시 현재 방 목록 전송
+        // 유저 입장 시 현재 방 목록 전송
         sendRoomList(handler);
     }
 
@@ -29,7 +29,7 @@ public class Lobby {
         // 2. 방장에게 화면 전환 신호 전송
         host.sendMessage(new Message(Message.RES_CREATE_SUCCESS, newRoom.getRoomId()));
         
-        // ★ [핵심] 로비에 남은 사람들에게 "새 방 생겼다!"고 알림
+        // 로비에 남은 사람들에게 새 방 생겼다고 알림
         broadcastRoomList();
         
         // 서버 GUI 연동
@@ -45,7 +45,7 @@ public class Lobby {
             user.setRoom(room);
             room.enterUser(user);
             
-            // ★ [핵심] 인원 수 변동이 있으므로 로비 갱신
+            // 인원 수 변동이 있으므로 로비 갱신
             broadcastRoomList();
         } else {
             user.sendMessage(new Message(Message.CHAT_MSG, "[System] 입장 실패"));
@@ -65,7 +65,7 @@ public class Lobby {
             roomList.remove(roomToRemove);
             System.out.println("[LOBBY] 방 삭제됨: " + roomId);
             
-            // ★ [핵심] 방 삭제되었으니 로비 갱신
+            // 방 삭제되었으니 로비 갱신
             broadcastRoomList();
             
             if (GameServer.instance != null) {

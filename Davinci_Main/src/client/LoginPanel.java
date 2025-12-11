@@ -33,13 +33,17 @@ public class LoginPanel extends JPanel {
         nicknameField = new JTextField(PLACEHOLDER); // 초기 문구 설정
         nicknameField.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
         nicknameField.setHorizontalAlignment(JTextField.CENTER);
-        nicknameField.setOpaque(false); // 배경 투명
-        nicknameField.setForeground(Color.GRAY); // 안내 문구
-        nicknameField.setCaretColor(Color.black);
-        nicknameField.setBorder(BorderFactory.createMatteBorder(0, 0, 3, 0, Color.WHITE));
+        nicknameField.setOpaque(true); // 배경 불투명으로 변경
+        nicknameField.setBackground(new Color(40, 40, 50, 240)); // 어두운 배경
+        nicknameField.setForeground(new Color(180, 180, 180)); // 밝은 회색 텍스트
+        nicknameField.setCaretColor(new Color(200, 200, 200));
+        nicknameField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+        ));
         
         // 위치 지정
-        nicknameField.setBounds(350, 220, 300, 40); 
+        nicknameField.setBounds(350, 220, 300, 45); 
 
         // 닉네임 포커스 리스너
         nicknameField.addFocusListener(new FocusListener() {
@@ -47,7 +51,7 @@ public class LoginPanel extends JPanel {
             public void focusGained(FocusEvent e) {
                 if (nicknameField.getText().equals(PLACEHOLDER)) {
                     nicknameField.setText("");
-                    nicknameField.setForeground(Color.black);
+                    nicknameField.setForeground(new Color(220, 220, 220));
                 }
             }
 
@@ -55,7 +59,7 @@ public class LoginPanel extends JPanel {
             public void focusLost(FocusEvent e) {
                 if (nicknameField.getText().isEmpty()) {
                     nicknameField.setText(PLACEHOLDER);
-                    nicknameField.setForeground(Color.GRAY);
+                    nicknameField.setForeground(new Color(140, 140, 140));
                 }
             }
         });
@@ -85,12 +89,29 @@ public class LoginPanel extends JPanel {
         nicknameField.addActionListener(validationAction);
 
         // 자물쇠 버튼
-        lockButton = new JButton();
-        lockButton.setContentAreaFilled(false);
-        lockButton.setBorderPainted(false);
+        lockButton = new JButton("접속하기");
+        lockButton.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        lockButton.setForeground(new Color(220, 220, 220));
+        lockButton.setBackground(new Color(50, 70, 100)); // 어두운 블루
+        lockButton.setContentAreaFilled(true);
+        lockButton.setBorderPainted(true);
         lockButton.setFocusPainted(false);
         lockButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        lockButton.setBounds(400, 300, 200, 240); 
+        lockButton.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
+            BorderFactory.createEmptyBorder(10, 20, 10, 20)
+        ));
+        lockButton.setBounds(400, 300, 200, 50);
+        
+        // 버튼 호버 효과
+        lockButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                lockButton.setBackground(new Color(70, 90, 130));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                lockButton.setBackground(new Color(50, 70, 100));
+            }
+        }); 
         
         // 버튼 클릭 시 검사 수행
         lockButton.addActionListener(validationAction); 
@@ -98,13 +119,13 @@ public class LoginPanel extends JPanel {
         add(lockButton);
 
         // 하단 패널
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bottomPanel.setBackground(new Color(0, 0, 0, 150));
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        bottomPanel.setBackground(new Color(20, 20, 30, 220));
         statusLabel = new JLabel("서버 연결 대기 중...");
-        statusLabel.setForeground(Color.WHITE);
+        statusLabel.setForeground(new Color(200, 200, 200));
         statusLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 16));
         bottomPanel.add(statusLabel);
-        bottomPanel.setBounds(0, 725, 1000, 40);
+        bottomPanel.setBounds(0, 750, 1000, 50);
         add(bottomPanel);
         
         // 초기 포커스 설정
