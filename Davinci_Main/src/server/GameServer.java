@@ -25,7 +25,7 @@ public class GameServer extends JFrame {
     private JTabbedPane tabbedPane;
     private JComboBox<String> filterCombo;
     
-    // [핵심 변경] 방의 로그 데이터와 GUI를 묶어서 관리하는 클래스 정의
+    // 방의 로그 데이터와 GUI를 묶어서 관리하는 클래스 정의
     private class RoomData {
         JTextArea area;
         ArrayList<String> history = new ArrayList<>(); // 이 방만의 로그 기록
@@ -153,7 +153,7 @@ public class GameServer extends JFrame {
         }
     }
 
-    // ★ [핵심] 모든 로그 새로고침 (필터 변경 시 호출)
+    // 모든 로그 새로고침 (필터 변경 시 호출)
     private void refreshAllLogs() {
         // 1. 메인 로그 갱신
         refreshTextArea(mainLogArea, mainLogHistory);

@@ -10,10 +10,10 @@ public class GameRoom {
     private RoomUserManager userManager;
     private DavinciGameLogic gameLogic;
     
-    // [추가 1] 상태 변경 시 로비에 알리기 위해 Lobby 참조 변수 필요
+    // 생성자에서 Lobby를 받음
     private Lobby lobby; 
 
-    // [수정 2] 생성자에서 Lobby를 받도록 변경
+    // 생성자에서 Lobby를 받도록 변경
     public GameRoom(int roomId, String title, ClientHandler host, Lobby lobby) {
         this.roomId = roomId;
         this.title = title;
@@ -34,19 +34,18 @@ public class GameRoom {
     // 1. 이미 게임 중이면 입장 거부
     if (gameLogic.isPlaying()) {
         // '입장 실패' 프로토콜을 전송합니다.
-        // Data1에 실패 사유(String)를 담아서 보냅니다.
+        // Data1에 실패 사유를 담아서 보냄
         handler.sendMessage(new Message(Message.RES_JOIN_FAIL, "이미 게임이 진행 중인 방입니다."));
         return; 
     }
     
     // 2. 인원 가득 찼는지 체크
     if (userManager.getUserCount() >= userManager.getMaxUser()) {
-        // [수정] 여기도 마찬가지로 팝업을 위해 변경
         handler.sendMessage(new Message(Message.RES_JOIN_FAIL, "방이 꽉 찼습니다."));
         return;
     }
 
-    // 3. 통과 시 입장 처리 (기존 코드 유지)
+    // 3. 통과 시 입장 처리
     userManager.enterUser(handler);
     handler.sendMessage(new Message(Message.RES_JOIN_SUCCESS, roomId));
     
@@ -56,7 +55,7 @@ public class GameRoom {
     public boolean exitUser(ClientHandler handler) {
         boolean isEmpty = userManager.exitUser(handler);
         
-        // [추가] 퇴장 시에도 인원수가 변하므로 로비 갱신
+        // 퇴장 시에도 인원수가 변하므로 로비 갱신
         if (!isEmpty) { // 방이 사라지는게 아니라면 갱신
             lobby.broadcastRoomList();
         }
@@ -71,7 +70,7 @@ public class GameRoom {
         userManager.getBroadcaster().broadcastChat(msg);
     }
 
-    // [수정 4] 게임 시작 시 로비 상태 갱신
+    // 게임 시작 시 로비 상태 갱신
     public void startGame() {
         gameLogic.startGame();
         
@@ -85,6 +84,10 @@ public class GameRoom {
     public void handleDraw(ClientHandler player, String data) {
         gameLogic.handleDraw(player, data);
     }
+    
+    public void handleJokerPosition(ClientHandler player, String data) {
+        gameLogic.handleJokerPosition(player, data);
+    }
 
     public void handleGuess(ClientHandler guesser, String data) {
         gameLogic.handleGuess(guesser, data);
@@ -94,7 +97,7 @@ public class GameRoom {
     	gameLogic.handleTimeout(player);
     }
     
-    // [추가] 턴 종료 위임 (아까 추가한 기능)
+    // 턴 종료 위임
     public void handleEndTurn(ClientHandler player) {
         gameLogic.handleEndTurn(player);
     }

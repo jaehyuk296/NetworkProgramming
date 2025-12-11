@@ -1,6 +1,7 @@
 package client;
 
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -11,6 +12,7 @@ import java.util.Vector;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.BorderFactory;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
@@ -57,27 +59,53 @@ public class Lobby extends JPanel {
 
         table = new JTable(model);
         table.setFont(new Font("Malgun Gothic", Font.PLAIN, 14)); // 폰트 설정
+        table.setRowHeight(45);
+        table.setSelectionBackground(new Color(80, 120, 180, 220));
+        table.setSelectionForeground(new Color(220, 220, 220));
+        table.setBackground(new Color(40, 40, 50, 240));
+        table.setForeground(new Color(200, 200, 200));
+        table.setGridColor(new Color(100, 100, 120, 150));
         
         // 가운데 정렬용 렌더러 생성
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                setHorizontalAlignment(SwingConstants.CENTER);
+                setOpaque(true);
+                if (isSelected) {
+                    setBackground(new Color(80, 120, 180, 220));
+                    setForeground(new Color(220, 220, 220));
+                } else {
+                    setBackground(row % 2 == 0 ? new Color(40, 40, 50, 240) : new Color(50, 50, 60, 240));
+                    setForeground(new Color(200, 200, 200));
+                }
+                return this;
+            }
+        };
 
         // 모든 컬럼에 가운데 정렬 적용
         for (int i = 0; i < table.getColumnCount(); i++) {
             table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
-        table.setRowHeight(40);
+        
         table.getTableHeader().setReorderingAllowed(false);
         table.getTableHeader().setResizingAllowed(false);
-        table.getTableHeader().setFont(new Font("Malgun Gothic", Font.BOLD, 14)); // 헤더 폰트
+        table.getTableHeader().setFont(new Font("Malgun Gothic", Font.BOLD, 15)); // 헤더 폰트
+        table.getTableHeader().setBackground(new Color(50, 60, 80));
+        table.getTableHeader().setForeground(new Color(220, 220, 220));
+        table.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
 
         scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
 
         // 테이블 위치 반드시 지정해야 보임
         scrollPane.setBounds(250, 250, 500, 300);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
-        scrollPane.setBackground(new Color(255, 255, 255, 150)); // 마지막 값 0~255 = 투명도
 
         add(scrollPane);
     }
@@ -85,14 +113,50 @@ public class Lobby extends JPanel {
     /** 버튼 영역 */
     private void setButton(ActionListener createAction, ActionListener enterAction) {
         create = new JButton("방 만들기");
-        create.setBounds(325, 600, 150, 50);
-        create.setFont(new Font("Malgun Gothic", Font.BOLD, 16));
-        create.addActionListener(createAction); // [수정 2] 버튼에 동작 연결
+        create.setBounds(325, 600, 150, 55);
+        create.setFont(new Font("Malgun Gothic", Font.BOLD, 17));
+        create.setForeground(new Color(220, 220, 220));
+        create.setBackground(new Color(50, 70, 100));
+        create.setFocusPainted(false);
+        create.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
+            BorderFactory.createEmptyBorder(10, 20, 10, 20)
+        ));
+        create.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        create.addActionListener(createAction);
+        
+        // 호버 효과
+        create.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                create.setBackground(new Color(70, 90, 130));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                create.setBackground(new Color(50, 70, 100));
+            }
+        });
 
         enter = new JButton("입장하기");
-        enter.setBounds(525, 600, 150, 50);
-        enter.setFont(new Font("Malgun Gothic", Font.BOLD, 16));
-        enter.addActionListener(enterAction);  // [수정 2] 버튼에 동작 연결
+        enter.setBounds(525, 600, 150, 55);
+        enter.setFont(new Font("Malgun Gothic", Font.BOLD, 17));
+        enter.setForeground(new Color(220, 220, 220));
+        enter.setBackground(new Color(40, 100, 70)); // 어두운 그린
+        enter.setFocusPainted(false);
+        enter.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(60, 130, 90), 2, true),
+            BorderFactory.createEmptyBorder(10, 20, 10, 20)
+        ));
+        enter.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        enter.addActionListener(enterAction);
+        
+        // 호버 효과
+        enter.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                enter.setBackground(new Color(50, 120, 90));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                enter.setBackground(new Color(40, 100, 70));
+            }
+        });
         
         add(create);
         add(enter);
@@ -100,11 +164,16 @@ public class Lobby extends JPanel {
     
     private void setLabel() {
         myInfo = new JLabel("안녕하세요, 플레이어님"); 	
-        myInfo.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
-        myInfo.setBounds(350, 30, 300, 50); // y좌표 살짝 내림 (30)
+        myInfo.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        myInfo.setBounds(350, 30, 300, 55);
         myInfo.setOpaque(true);
-        myInfo.setBackground(new Color(255, 255, 255, 200)); // 배경 반투명
+        myInfo.setBackground(new Color(40, 40, 50, 240));
+        myInfo.setForeground(new Color(220, 220, 220));
         myInfo.setHorizontalAlignment(JLabel.CENTER);
+        myInfo.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
         add(myInfo);
     }
 

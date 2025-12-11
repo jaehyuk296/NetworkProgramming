@@ -314,6 +314,23 @@ public class GameClient extends JFrame {
                                 inGamePanel.handleDrawResult(drawnTile, insertIdx);
                             });
                             break;
+                            
+                        case Message.BCAST_DRAW:
+                            // 서버에서 보낸 데이터: Vector<Object> [닉네임, 색상, 인덱스]
+                            // DavinciGameLogic.java에서 data1에 담아서 보냈으므로 getData1()으로 꺼냅니다.
+                            Vector<Object> drawInfo = (Vector<Object>) msg.getData1();
+                            
+                            String drawerNick = (String) drawInfo.get(0);
+                            String drawnColor = (String) drawInfo.get(1);
+                            int drawnIdx = (int) drawInfo.get(2);
+
+                            SwingUtilities.invokeLater(() -> {
+                                if (inGamePanel != null) {
+                                    // InGameUI에 상대방 타일 추가 요청
+                                    inGamePanel.handleOpponentDraw(drawerNick, drawnColor, drawnIdx);
+                                }
+                            });
+                            break;
 
                         case Message.BCAST_REVEAL:
                             // 타일 공개 알림
@@ -327,7 +344,7 @@ public class GameClient extends JFrame {
 
                             SwingUtilities.invokeLater(() -> {
                                 inGamePanel.handleReveal(rTarget, rIndex, revealedTile);
-                                inGamePanel.appendChat("[시스템] " + rTarget + "님의 타일이 공개되었습니다: " + revealedTile.getNumber());
+                                inGamePanel.appendChat("[System] " + rTarget + "님의 타일이 공개되었습니다: " + revealedTile.getNumber());
                             });
                             break;
 
@@ -336,6 +353,45 @@ public class GameClient extends JFrame {
                             String nextPlayer = (String) msg.getData1();
                             inGamePanel.updateTurn(nextPlayer);
                             break;
+                        
+                        case Message.GAME_OVER:
+                            // 게임 종료 - 승자 정보 받기
+                            String winner = (String) msg.getData1();
+                            String gameOverMessage = "게임 종료! 승자는 " + winner + "님 입니다.";
+                            
+                            SwingUtilities.invokeLater(() -> {
+                                // 팝업창 표시 (나가기, 대기하기 두 버튼)
+                                int option = JOptionPane.showOptionDialog(
+                                    GameClient.this,
+                                    gameOverMessage,
+                                    "게임 종료",
+                                    JOptionPane.DEFAULT_OPTION,
+                                    JOptionPane.INFORMATION_MESSAGE,
+                                    null,
+                                    new Object[]{"대기하기", "나가기"},
+                                    "대기하기"
+                                );
+                                
+                                // 대기하기 버튼 클릭 시 (옵션 0)
+                                if (option == 0) {
+                                    // 방 나가기 요청 없이 대기방으로 이동
+                                    cardLayout.show(mainPanel, "ROOM");
+                                }
+                                // 나가기 버튼 클릭 시 (옵션 1)
+                                else if (option == 1) {
+                                    // 방 나가기 요청 전송
+                                    send(new Message(Message.REQ_EXIT_ROOM));
+                                    // 로비로 이동
+                                    showLobby();
+                                }
+                                // 팝업 닫기 시 (CLOSED_OPTION) - 기본 동작은 나가기
+                                else if (option == JOptionPane.CLOSED_OPTION) {
+                                    send(new Message(Message.REQ_EXIT_ROOM));
+                                    showLobby();
+                                }
+                            });
+                            break;
+                        
                     }
                 }
             } catch (Exception e) {
