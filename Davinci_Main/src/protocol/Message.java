@@ -10,8 +10,8 @@ public class Message implements Serializable {
     public static final int LOGIN_SUCCESS = 1001;// 서버 -> 클라: "로그인 성공 (로비로 이동)"
     public static final int LOGIN_FAIL = 1002;   // 서버 -> 클라: "로그인 실패"
 
-    public static final int REQ_CREATE_ROOM = 2000; // 클라 -> 서버: "방 만들어줘 (방제목)"
-    public static final int RES_CREATE_SUCCESS = 2001; // 서버 -> 클라: "방 만들어짐 (대기방으로 이동해)"
+    public static final int REQ_CREATE_ROOM = 2000; // 클라 -> 서버: "방제목"
+    public static final int RES_CREATE_SUCCESS = 2001; // 서버 -> 클라: "방 만들어짐 (대기방으로 이동)"
     public static final int REQ_JOIN_ROOM = 2002;  // 서버 -> 클라: "방 목록이 갱신 (리스트 데이터)"
     public static final int SRES_ROOM_LIST = 2003;  // 서버 -> 클라: "방 목록 데이터 갱신"  
 
@@ -25,9 +25,9 @@ public class Message implements Serializable {
 	public static final int RES_JOIN_FAIL = 3006;	// 방 입장 실패 (게임 중이거나 인원 초과 등)
 
     // 게임 전용 프로토콜
-    public static final int GAME_START = 4000;     // 서버 -> 클라: "게임 시작! (내 타일 정보 포함)"
-    public static final int TURN_START = 4001;     // 서버 -> 클라(전체): "누구의 턴입니다" (닉네임 전송)
-    public static final int TURN_TIMEOUT = 4002;   // [추가] 클라 -> 서버: 30초 초과 후 다음 턴 요구
+    public static final int GAME_START = 4000;     // 서버 -> 클라: "게임 시작 (내 타일 정보 포함)"
+    public static final int TURN_START = 4001;     // 서버 -> 클라(전체): 누구의 턴입니다 (닉네임 전송)
+    public static final int TURN_TIMEOUT = 4002;   // 클라 -> 서버: 300초 초과 후 다음 턴 요구
     public static final int REQ_DRAW = 4003;       // 클라 -> 서버: "타일 뽑기 요청" (데이터: "색상:인덱스")
     public static final int RES_DRAW = 4004;       // 서버 -> 클라: "타일 뽑기 결과" (데이터: 뽑은 타일 객체)
     public static final int REQ_GUESS = 4005;      // 클라 -> 서버: "추리 요청" (데이터: "타겟ID:인덱스:추측값")
@@ -40,7 +40,7 @@ public class Message implements Serializable {
     // --- 데이터 ---
 	private int mode;
 	    private Object data1;
-	    private Object data2; // (구 payload)
+	    private Object data2;
 	    private Object data3; // 추가 데이터
 	
 	    // --- 생성자 ---
@@ -75,7 +75,7 @@ public class Message implements Serializable {
 	    public Object getData3() { return data3; }
 	    public void setData3(Object data3) { this.data3 = data3; }
 	
-	    // [호환성 유지] payload는 data2를 가리킴
+	    // [호환성 유지]
 	    public Object getPayload() { return data2; }
 	    public void setPayload(Object payload) { this.data2 = payload; }
 	}

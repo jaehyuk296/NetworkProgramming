@@ -184,23 +184,18 @@ public class DavinciGameLogic {
         }
         
         // 상대방에게는 실제 정렬된 순서의 인덱스를 그대로 전송
-        // 상대방은 숫자를 모르지만, 정렬된 순서의 색상 정보를 그대로 보여야 함
-        // (색상 기준으로 재정렬하지 않고 실제 정렬 순서 유지)
         int opponentIndex = sortedIndex;
         
         // 1. 클라이언트(본인)에게 결과 전송 (전체 정보)
         player.sendMessage(new Message(Message.RES_DRAW, drawn, sortedIndex));
         
         // 2. 상대방에게 갱신 정보 브로드캐스트 추가
-        // 상대방은 색상만 알 수 있지만, 실제 정렬된 순서(숫자+색상 기준)의 인덱스를 전송
-        // 이렇게 하면 상대방이 보는 타일 순서가 내 타일의 실제 정렬 순서와 일치함
-        // 데이터 구조: [뽑은 사람 ID, 타일 색상, 정렬된 인덱스]
         Vector<Object> broadcastData = new Vector<>();
         broadcastData.add(player.getNickname());
         broadcastData.add(drawn.getColor());
         broadcastData.add(opponentIndex); 
         
-        broadcaster.broadcast(new Message(Message.BCAST_DRAW, broadcastData)); // Message.BCAST_DRAW는 Message.java에 정의 필요
+        broadcaster.broadcast(new Message(Message.BCAST_DRAW, broadcastData));
         
         broadcaster.broadcastChat("[System] " + player.getNickname() + "님이 " + color + " 타일을 가져갔습니다.");
         broadcaster.roomLog(player.getNickname() + "님이 " + color + " 타일 드로우 (위치: " + insertIndex + ")");
@@ -234,7 +229,7 @@ public class DavinciGameLogic {
             return;
         }
         
-        // 조커를 패에 추가 (handleDraw에서 추가하지 않았으므로 여기서 추가)
+        // 조커를 패에 추가
         Vector<Tile> hand = userHands.get(player.getNickname());
         
         // 지정된 인덱스에 조커 삽입
@@ -249,9 +244,7 @@ public class DavinciGameLogic {
         // 정렬 후 실제 인덱스 찾기
         int sortedIndex = hand.indexOf(currentTurnDrawnTile);
         
-        // 정렬 후 공개된 타일들의 새로운 인덱스 계산 및 업데이트
-        // 공개된 타일들이 정렬로 인해 위치가 변경되었을 수 있으므로 업데이트
-        // 단, 조커는 정렬에서 제외되므로 공개된 조커는 업데이트하지 않음
+        // 정렬 후 공개된 타일들의 새로운 인덱스 계산 및 업데이트(조커 제외)
         for (int i = 0; i < hand.size(); i++) {
             Tile t = hand.get(i);
             if (t.isRevealed() && t != currentTurnDrawnTile && !t.isJoker()) {
@@ -430,6 +423,84 @@ public class DavinciGameLogic {
             }
         }
         return survivorCount <= 1;
+    }
+
+    public void handleUserExit(ClientHandler leaver) {
+        Vector<ClientHandler> users = userManager.getUserList();
+        int leaverIndex = users.indexOf(leaver);
+        
+        if (leaverIndex == -1) return;
+
+        String leaverName = leaver.getNickname();
+        broadcaster.broadcastChat("[System] " + leaverName + "님이 게임에서 이탈했습니다.");
+        broadcaster.roomLog(leaverName + " 강제 퇴장 처리");
+
+        // 1. 나간 사람의 패를 모두 공개하고, 화면에도 뒤집으라고 알림 (BCAST_REVEAL 전송)
+        Vector<Tile> leaverHand = userHands.get(leaverName);
+        if (leaverHand != null) {
+            for (int i = 0; i < leaverHand.size(); i++) {
+                Tile t = leaverHand.get(i);
+                // 아직 공개되지 않은 타일만 찾아서 공개 처리 및 방송
+                if (!t.isRevealed()) {
+                    t.setRevealed(true);
+                    String revealInfo = leaverName + ":" + i;
+                    broadcaster.broadcast(new Message(Message.BCAST_REVEAL, revealInfo, t));
+                }
+            }
+        }
+
+        // 2. 턴 인덱스 조정
+        if (leaverIndex < turnIndex) {
+            turnIndex--;
+        }
+
+        boolean isCurrentTurn = (leaverIndex == turnIndex);
+
+        // 3. 승리 조건 체크 (남은 생존자 확인)
+        int survivorCount = 0;
+        for (ClientHandler u : users) {
+            if (!u.equals(leaver) && !isPlayerOut(u.getNickname())) {
+                survivorCount++;
+            }
+        }
+
+        if (survivorCount <= 1) {
+            String winner = "None";
+            for (ClientHandler u : users) {
+                if (!u.equals(leaver) && !isPlayerOut(u.getNickname())) {
+                    winner = u.getNickname();
+                    break;
+                }
+            }
+            endGame(winner);
+            return;
+        }
+
+        // 4. 현재 턴 유저가 나갔으면 다음 사람으로 턴 넘기기
+        if (isCurrentTurn) {
+            currentTurnDrawnTile = null;
+            hasGuessedCorrectly = false;
+            
+            // 삭제 후 인덱스 범위 보정
+            int nextSize = users.size() - 1; 
+            if (turnIndex >= nextSize) {
+                turnIndex = 0;
+            }
+            
+            broadcaster.broadcastChat("[System] 턴 플레이어 이탈로 턴이 넘어갑니다.");
+            
+            // 다음 플레이어 찾기 (나간 사람 바로 다음)
+            ClientHandler nextPlayer = null;
+            if (leaverIndex + 1 < users.size()) {
+                nextPlayer = users.get(leaverIndex + 1);
+            } else {
+                if (users.size() > 1) nextPlayer = users.get(0);
+            }
+            
+            if (nextPlayer != null && !nextPlayer.equals(leaver)) {
+                broadcaster.broadcast(new Message(Message.TURN_START, nextPlayer.getNickname()));
+            }
+        }
     }
     
     // 게임 종료 처리

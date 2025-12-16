@@ -11,11 +11,6 @@ public class Tile implements Serializable, Comparable<Tile> {
     private int number;   // 0 ~ 11, 조커는 -1
     private boolean isRevealed; // true면 공개됨(누워있음), false면 비공개(서있음)
 
-    /**
-     * 타일 생성자
-     * @param color 색상 ("BLACK", "WHITE")
-     * @param number 숫자 (0~11, 조커는 -1)
-     */
     public Tile(String color, int number) {
         this.color = color;
         this.number = number;
@@ -41,20 +36,15 @@ public class Tile implements Serializable, Comparable<Tile> {
     }
 
     // --- 유틸리티 메서드 ---
-
-    /**
-     * 이 타일이 조커인지 확인
-     */
+    // 이 타일이 조커인지 확인
     public boolean isJoker() {
         return this.number == -1;
     }
 
-    /**
-     * 다빈치코드 정렬 규칙: 
-     * 1. 숫자 오름차순 (0 -> 11)
-     * 2. 숫자가 같으면 검은색이 왼쪽 (Black < White)
-     * (조커는 정렬에서 제외하거나 맨 뒤로 보냄 - 로직에 따라 다름)
-     */
+
+    // 다빈치코드 정렬 규칙: 
+    // 1. 숫자 오름차순 (0 -> 11)
+    // 2. 숫자가 같으면 검은색이 왼쪽 (Black < White)
     @Override
     public int compareTo(Tile other) {
         if (this.number == other.number) {
@@ -70,9 +60,7 @@ public class Tile implements Serializable, Comparable<Tile> {
         return Integer.compare(this.number, other.number);
     }
 
-    /**
-     * 디버깅용 출력 (예: [B 7] or [W -])
-     */
+    // 디버깅용 출력 (예: [B 7] or [W -])
     @Override
     public String toString() {
         String numStr = isJoker() ? "J" : String.valueOf(number);
