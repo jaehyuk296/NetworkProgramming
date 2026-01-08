@@ -25,10 +25,9 @@ public class GameClient extends JFrame {
     
     private LoginPanel loginPanel;
     private Lobby lobbyPanel;
-    private Waiting waitingPanel; // [추가] 대기방 패널
-    private InGameUI inGamePanel;
+    private Waiting waitingPanel;
+    private InGame inGamePanel;
 
-    // 네트워크 관련
     private Socket socket;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
@@ -48,23 +47,23 @@ public class GameClient extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
 
-        // 1. 화면 전환용 카드 레이아웃 설정
+        // 화면 전환용 카드 레이아웃 설정
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
 
-        // 2. 로그인 화면 생성
+        // 로그인 화면 생성
         loginPanel = new LoginPanel(e -> connectToServer());
 
-        // 3. 로비 화면 생성
+        // 로비 화면 생성
         lobbyPanel = new Lobby(
-            // [방 만들기 버튼 동작]
+            // 방 만들기 버튼 동작
             e -> {
                 String roomTitle = JOptionPane.showInputDialog(this, "방 제목을 입력하세요:", "방 만들기", JOptionPane.QUESTION_MESSAGE);
                 if (roomTitle != null && !roomTitle.trim().isEmpty()) {
                     requestCreateRoom(roomTitle.trim());
                 }
             }, 
-            // [입장하기 버튼 동작]
+            // 입장하기 버튼 동작
             e -> {
                 String roomId = lobbyPanel.getSelectedRoomId();
                 if (roomId == null) {
@@ -75,15 +74,16 @@ public class GameClient extends JFrame {
             }
         );
 
-        // 4. [추가] 대기방 화면 생성
-        waitingPanel = new Waiting(this); // 팀원 코드에 맞춰 파라미터 없이 생성
+        // 대기방 화면 생성
+        waitingPanel = new Waiting(this);
         
-        inGamePanel = new InGameUI(this);
+        // 인게임방 화면 생성
+        inGamePanel = new InGame(this);
 
-        // 5. 패널 등록
+        // 패널 등록
         mainPanel.add(loginPanel, "LOGIN");
         mainPanel.add(lobbyPanel, "LOBBY");
-        mainPanel.add(waitingPanel, "ROOM"); // [추가] 대기방 등록
+        mainPanel.add(waitingPanel, "ROOM");
         mainPanel.add(inGamePanel, "GAME");
 
         add(mainPanel);
@@ -115,46 +115,12 @@ public class GameClient extends JFrame {
             e.printStackTrace();
         }
     }
-     /* Waiting Panel에서 Lobby Panel로 화면을 전환하고,
-     * 방 목록을 갱신하도록 요청합니다.
-     */
+    
     public void showLobby() {
         // UI 스레드에서 화면 전환 실행
         SwingUtilities.invokeLater(() -> {
             cardLayout.show(mainPanel, "LOBBY");
-            // 로비로 돌아온 후, 방 목록을 서버에 요청하여 갱신합니다.
-            requestRoomList(); 
         });
-    }
-    
-    // [추가] 서버에 방 목록 갱신을 요청하는 메서드
-    private void requestRoomList() {
-        if (oos == null) return;
-        try {
-            // 서버에 방 목록 갱신을 요청하는 메시지를 보냅니다.
-            // (Message.REQ_JOIN_ROOM 상수가 재활용되거나 새로운 상수가 필요할 수 있습니다. 
-            // 현재는 REQ_JOIN_ROOM이 방 입장 요청이므로, 새로운 요청 상수(예: REQ_ROOM_LIST)가 필요하지만, 
-            // 현재 코드를 기반으로 메시지를 보냅니다. Lobby.java의 broadcastRoomList()는 
-            // lobbyUsers에게 SRES_ROOM_LIST를 보내므로, Lobby로 돌아왔다면 목록이 갱신되어야 합니다.)
-            // 임시로 Lobby에서 방 목록을 요청받는 기능이 있다고 가정하고 메시지를 보냅니다.
-            
-            // Note: 현재 서버 코드는 클라이언트가 로비로 돌아오면 (Lobby.addUser(this)) 
-            // 서버가 자동으로 목록을 보내주므로, 클라이언트가 명시적으로 요청할 필요는 없을 수 있습니다.
-            // 하지만 안전을 위해 명시적 요청을 보낼 수도 있습니다.
-            
-            // 현재 서버 코드는 클라이언트가 방에서 나가면 (ClientHandler.REQ_EXIT_ROOM 처리):
-            // 1. currentRoom.exitUser(this);
-            // 2. this.currentRoom = null;
-            // 3. lobby.addUser(this);  <-- 이 시점에 Lobby.addUser()가 sendRoomList(this)를 호출하여 
-            //    클라이언트에게 목록을 보내줍니다. (따라서 명시적 요청은 불필요할 수 있습니다.)
-            
-            // 만약 서버 측에서 자동 전송이 안된다면 이 주석을 제거하고 사용하세요:
-            // oos.writeObject(new Message(Message.REQ_ROOM_LIST)); 
-            // oos.flush();
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     // 서버 접속 및 화면 전환 로직
@@ -207,7 +173,7 @@ public class GameClient extends JFrame {
         }
     }
     
-    // [내부 클래스] 서버 메시지를 계속 듣는 리스너
+    // 서버 메시지를 듣는 리스너
     class ServerListener extends Thread {
         @Override
         public void run() {
@@ -216,6 +182,7 @@ public class GameClient extends JFrame {
                     Message msg = (Message) ois.readObject();
 
                     switch (msg.getMode()) {
+                    	// 방 목록
                         case Message.SRES_ROOM_LIST: 
                             Vector<Vector<String>> rooms = (Vector<Vector<String>>) msg.getPayload();
                             SwingUtilities.invokeLater(() -> {
@@ -223,7 +190,7 @@ public class GameClient extends JFrame {
                             });
                             break;
 
-                        case Message.RES_JOIN_FAIL: // 방 입장 실패 처리 따로 추가했어 - 재혁
+                        case Message.RES_JOIN_FAIL:
                             String failReason = (String) msg.getData1();
                             SwingUtilities.invokeLater(() -> {
                                 JOptionPane.showMessageDialog(
@@ -235,53 +202,42 @@ public class GameClient extends JFrame {
                             });
                             break;
                             
-                        // [추가] 방 만들기 성공 -> 대기방 이동
+                        // 방 만들기 성공 -> 대기방 이동
                         case Message.RES_CREATE_SUCCESS:
                             System.out.println("방 생성 성공: " + msg.getData1());
                             SwingUtilities.invokeLater(() -> cardLayout.show(mainPanel, "ROOM"));
                             break;
 
-                        // [추가] 방 입장 성공 -> 대기방 이동
-                        // (Message.java에 RES_JOIN_SUCCESS 상수가 있어야 합니다. 없으면 3000 사용)
+                        // 방 입장 성공 -> 대기방 이동
                         case Message.RES_JOIN_SUCCESS:
                             System.out.println("방 입장 성공!");
                             SwingUtilities.invokeLater(() -> cardLayout.show(mainPanel, "ROOM"));
                             break;
                             
-                         // ServerListener 내부 run() 메서드의 switch 문 안
-                        case Message.CHAT_MSG: // (상수 값이 없다면 서버 코드와 동일하게 맞춤)
-                            String chatText = (String) msg.getData1(); // 서버 코드: "[" + nickname + "] " + msg.getData1()
+                         // 채팅
+                        case Message.CHAT_MSG:
+                            String chatText = (String) msg.getData1();
                             SwingUtilities.invokeLater(() -> {
                             	if (waitingPanel != null && waitingPanel.isVisible()) {
                                     waitingPanel.appendChat(chatText);
                                 }
-
-                                // InGame 화면에서도 받을 수 있어야 함
+                            	
                                 if (inGamePanel != null && inGamePanel.isVisible()) {
                                     inGamePanel.appendChat(chatText);
                                 }
                             });
                             break;
-                        case Message.ROOM_UPDATE: // 방 상태 업데이트
-                            
-                            // [수정 전] 에러 발생 (String을 Vector로 바꾸려 함)
-                            // Vector<String> userInfos = (Vector<String>) msg.getPayload();
-                            
-                            // [수정 후] 정답 (data1에 있는 Vector를 꺼냄)
+                         // 방 상태 업데이트
+                        case Message.ROOM_UPDATE:
                             Vector<String> userInfos = (Vector<String>) msg.getData1();
                             
-                            // (필요하다면 방장 이름은 이렇게 꺼냄)
-                            // String hostName = (String) msg.getPayload(); // data2
-
                             latestUserInfos = userInfos;
                             SwingUtilities.invokeLater(() -> {
                                 waitingPanel.updatePlayers(latestUserInfos, myPlayerID); 
                             });
                             break;
-                         // GameClient.java 내부 ServerListener 클래스
 
                         case Message.GAME_START:                            
-                            // Data1: 내 패(Vector<Tile>), Data2: 이름목록(Vector<String>)
                             Vector<Tile> myHand = (Vector<Tile>) msg.getData1();
                             Vector<String> players = (Vector<String>) msg.getData2();
                             Map<String, Vector<String>> otherColors = (Map<String, Vector<String>>) msg.getData3();
@@ -289,7 +245,6 @@ public class GameClient extends JFrame {
                             SwingUtilities.invokeLater(() -> {
                                 System.out.println("게임 시작!");
                                 cardLayout.show(mainPanel, "GAME");
-                                // InGameUI 초기화 호출
                                 inGamePanel.startGame(myHand, players, otherColors, myPlayerID);
                             });
                             break;
@@ -302,13 +257,10 @@ public class GameClient extends JFrame {
                             });
                             break;
 
+                         // 타일 뽑기 결과
                         case Message.RES_DRAW:
-                            // 타일 뽑기 결과
-                            // Data1: Tile 객체, Data2: Index (Integer) -> Payload getter 사용 시 주의
-                            // Message 생성자를 보면 (mode, data1, payload) 순서일 수 있음. 확인 필요.
-                            // 여기선 Server 코드: new Message(RES_DRAW, drawn, insertIndex)
                             Tile drawnTile = (Tile) msg.getData1();
-                            int insertIdx = (Integer) msg.getData2(); // data2(payload)에 인덱스
+                            int insertIdx = (Integer) msg.getData2();
 
                             SwingUtilities.invokeLater(() -> {
                                 inGamePanel.handleDrawResult(drawnTile, insertIdx);
@@ -316,8 +268,7 @@ public class GameClient extends JFrame {
                             break;
                             
                         case Message.BCAST_DRAW:
-                            // 서버에서 보낸 데이터: Vector<Object> [닉네임, 색상, 인덱스]
-                            // DavinciGameLogic.java에서 data1에 담아서 보냈으므로 getData1()으로 꺼냅니다.
+                            // Vector<Object> [닉네임, 색상, 인덱스]
                             Vector<Object> drawInfo = (Vector<Object>) msg.getData1();
                             
                             String drawerNick = (String) drawInfo.get(0);
@@ -332,10 +283,11 @@ public class GameClient extends JFrame {
                             });
                             break;
 
+                         // 타일 공개 알림
                         case Message.BCAST_REVEAL:
-                            // 타일 공개 알림
-                            // Data1: "TargetID:Index", Data2: Tile 객체
+                            // Data1: "TargetID:Index"
                             String revealInfo = (String) msg.getData1();
+                            // Data2: Tile 객체
                             Tile revealedTile = (Tile) msg.getData2();
                             
                             String[] rParts = revealInfo.split(":");
@@ -348,19 +300,19 @@ public class GameClient extends JFrame {
                             });
                             break;
 
+                         // 서버에서 턴 넘김 알림을 보내는 경우
                         case Message.TURN_TIMEOUT:
-                        	// 서버에서 턴 넘김 알림을 보내는 경우
                             String nextPlayer = (String) msg.getData1();
                             inGamePanel.updateTurn(nextPlayer);
                             break;
                         
+                         // 게임 종료
                         case Message.GAME_OVER:
-                            // 게임 종료 - 승자 정보 받기
                             String winner = (String) msg.getData1();
                             String gameOverMessage = "게임 종료! 승자는 " + winner + "님 입니다.";
                             
                             SwingUtilities.invokeLater(() -> {
-                                // 팝업창 표시 (나가기, 대기하기 두 버튼)
+                                // 팝업창 표시
                                 int option = JOptionPane.showOptionDialog(
                                     GameClient.this,
                                     gameOverMessage,
@@ -372,19 +324,16 @@ public class GameClient extends JFrame {
                                     "대기하기"
                                 );
                                 
-                                // 대기하기 버튼 클릭 시 (옵션 0)
+                                // 대기하기 버튼 클릭 시
                                 if (option == 0) {
-                                    // 방 나가기 요청 없이 대기방으로 이동
                                     cardLayout.show(mainPanel, "ROOM");
                                 }
-                                // 나가기 버튼 클릭 시 (옵션 1)
+                                // 나가기 버튼 클릭 시
                                 else if (option == 1) {
-                                    // 방 나가기 요청 전송
                                     send(new Message(Message.REQ_EXIT_ROOM));
-                                    // 로비로 이동
                                     showLobby();
                                 }
-                                // 팝업 닫기 시 (CLOSED_OPTION) - 기본 동작은 나가기
+                                // 팝업 닫기 시 기본 동작은 나가기
                                 else if (option == JOptionPane.CLOSED_OPTION) {
                                     send(new Message(Message.REQ_EXIT_ROOM));
                                     showLobby();
@@ -400,6 +349,7 @@ public class GameClient extends JFrame {
         }
     }
     
+    // 서버와 통신
     public void send(Message msg) {
         if (oos == null) return;
         try {

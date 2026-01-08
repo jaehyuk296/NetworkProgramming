@@ -1,7 +1,6 @@
 package client;
 
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -35,18 +34,16 @@ public class Waiting extends JPanel {
     private JTextField t_input;
     private JButton b_send, b_start, b_ready, b_exit;
     
-    //  통신을 담당하는 메인 클라이언트 참조
     private GameClient gameClient;
     
     // 윈도우 종료 이벤트를 감지할 리스너 변수
     private WindowAdapter exitListener;
     
-    // 생성자에서 GameClient를 전달받습니다.
     public Waiting(GameClient gameClient) {
         this.gameClient = gameClient;
         
         try {
-            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg"));
+            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg")); // 출처: Canva AI 이미지 생성
         } catch (IOException e) {
             System.out.println("이미지 로드 실패: ./imgs/game_img.jpg");
         }
@@ -54,32 +51,7 @@ public class Waiting extends JPanel {
         setLayout(null); 
         buildGUI();
         
-        // player1~4 객체가 setPlayer()에서 생성된 후 배열 초기화
         playerLabels = new JLabel[] {player1, player2, player3, player4};
-    }
-    
-    @Override
-    public void addNotify() {
-        super.addNotify();
-        
-        // 현재 이 패널을 담고 있는 부모 윈도우(JFrame)를 가져옴
-        Window window = SwingUtilities.getWindowAncestor(this);
-        
-        if (window != null) {
-            // 리스너가 중복 생성되지 않도록 초기화
-            if (exitListener == null) {
-                exitListener = new WindowAdapter() {
-                    @Override
-                    public void windowClosing(WindowEvent e) {
-                        // X 버튼을 눌렀을 때 실행되는 로직
-                        System.out.println("대기방에서 X 버튼 종료 감지 -> 퇴장 요청 전송");
-                        gameClient.send(new Message(Message.REQ_EXIT_ROOM));
-                    }
-                };
-            }
-            // 윈도우에 리스너 부착
-            window.addWindowListener(exitListener);
-        }
     }
     
     private void buildGUI() {
@@ -97,6 +69,7 @@ public class Waiting extends JPanel {
         player1.setOpaque(true); 
         player1.setBackground(new Color(50, 50, 60, 240));
         player1.setForeground(new Color(220, 220, 220));
+        // **외부 참조** BorderFactory
         player1.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -110,6 +83,7 @@ public class Waiting extends JPanel {
         player2.setOpaque(true);
         player2.setBackground(new Color(50, 50, 60, 240));
         player2.setForeground(new Color(220, 220, 220));
+        // **외부 참조** BorderFactory
         player2.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -123,6 +97,7 @@ public class Waiting extends JPanel {
         player3.setOpaque(true);
         player3.setBackground(new Color(50, 50, 60, 240));
         player3.setForeground(new Color(220, 220, 220));
+        // **외부 참조** BorderFactory
         player3.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -136,6 +111,7 @@ public class Waiting extends JPanel {
         player4.setOpaque(true);
         player4.setBackground(new Color(50, 50, 60, 240));
         player4.setForeground(new Color(220, 220, 220));
+        // **외부 참조** BorderFactory
         player4.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -148,18 +124,18 @@ public class Waiting extends JPanel {
     }
     
     private void setButtons() {
-        // 시작하기 버튼 (HOST 전용)
+        // 시작하기 버튼 (방정 전용)
         b_start = new JButton("게임 시작");
         b_start.setBounds(400, 700, 200, 50);
         b_start.setFont(new Font("Malgun Gothic", Font.BOLD, 19));
         b_start.setForeground(new Color(220, 220, 220));
         b_start.setBackground(new Color(40, 100, 70));
         b_start.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_start.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 130, 90), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
-        b_start.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b_start.setVisible(false);
         b_start.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -167,6 +143,7 @@ public class Waiting extends JPanel {
             }
         });
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_start.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -186,11 +163,11 @@ public class Waiting extends JPanel {
         b_ready.setForeground(new Color(220, 220, 220));
         b_ready.setBackground(new Color(50, 70, 100));
         b_ready.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_ready.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
-        b_ready.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b_ready.setVisible(false);
         b_ready.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -198,6 +175,7 @@ public class Waiting extends JPanel {
             }
         });
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_ready.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -210,23 +188,24 @@ public class Waiting extends JPanel {
         
         add(b_ready);
         
+        // 나가기 버튼
         b_exit = new JButton("나가기");
         b_exit.setBounds(20, 20, 120, 45);
         b_exit.setFont(new Font("Malgun Gothic", Font.BOLD, 16));
         b_exit.setForeground(new Color(220, 220, 220));
         b_exit.setBackground(new Color(150, 40, 50));
         b_exit.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_exit.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(180, 60, 70), 2, true),
             BorderFactory.createEmptyBorder(8, 15, 8, 15)
         ));
-        b_exit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
         b_exit.addActionListener(e -> {
             gameClient.send(new Message(Message.REQ_EXIT_ROOM));
             gameClient.showLobby();
         });
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_exit.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -246,11 +225,13 @@ public class Waiting extends JPanel {
         chatArea.setBackground(new Color(40, 40, 50, 240));
         chatArea.setForeground(new Color(200, 200, 200));
         chatArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
+        // **외부 참조** BorderFactory
         chatArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // 채팅창 스크롤바
         JScrollPane scrollPane = new JScrollPane(chatArea);
         scrollPane.setBounds(20, 550, 320, 150);
+        // **외부 참조** BorderFactory
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
@@ -264,6 +245,7 @@ public class Waiting extends JPanel {
         t_input.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
         t_input.setBackground(new Color(40, 40, 50, 240));
         t_input.setForeground(new Color(200, 200, 200));
+        // **외부 참조** BorderFactory
         t_input.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -281,17 +263,18 @@ public class Waiting extends JPanel {
         b_send.setForeground(new Color(220, 220, 220));
         b_send.setBackground(new Color(50, 70, 100));
         b_send.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_send.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
-        b_send.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b_send.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 sendMessage();
             }
         });
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_send.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -307,7 +290,7 @@ public class Waiting extends JPanel {
         add(scrollPane);
     }
     
-    // [메시지 전송 기능]
+    // 메시지 전송 기능
     private void sendMessage() {
         String msgText = t_input.getText().trim();
         if(msgText.length() > 0) {
@@ -317,22 +300,15 @@ public class Waiting extends JPanel {
         }
     }
     
-    // [외부 호출용] 서버에서 받은 채팅을 화면에 보여주는 메서드
+    // 서버에서 받은 채팅을 화면에 보여주는 메서드
     public void appendChat(String msg) {
         chatArea.append(msg + "\n");
         chatArea.setCaretPosition(chatArea.getDocument().getLength()); // 자동 스크롤
     }
     
-    /**
-     * 서버로부터 받은 유저 정보를 파싱하여 JLabel에 설정합니다.
-     * @param userInfos 유저 정보 리스트 (닉네임:READY여부:방장여부 형식의 String Vector)
-     * @param myNickname 현재 클라이언트의 닉네임
-     */
+    // 플레이어 업데이트 메서드
     public void updatePlayers(Vector<String> userInfos, String myNickname) {
-        
         if (userInfos == null) {
-            System.err.println("[Client] ROOM_UPDATE payload (userInfos) is null.");
-            // P2, P3, P4만 초기화하고 함수 종료
             for (int i = 1; i < playerLabels.length; i++) {
                 playerLabels[i].setText("대기 중...");
                 playerLabels[i].setBackground(new Color(50, 50, 60, 240));
@@ -341,7 +317,7 @@ public class Waiting extends JPanel {
             return;
         }
 
-        // 1. 모든 라벨 초기화 (핵심 수정: P1을 제외하고 P2, P3, P4만 초기화)
+        // 모든 라벨 초기화 (P1을 제외하고 P2, P3, P4만 초기화)
         for (int i = 1; i < playerLabels.length; i++) {
             playerLabels[i].setText("대기 중...");
             playerLabels[i].setBackground(new Color(50, 50, 60, 240));
@@ -349,16 +325,14 @@ public class Waiting extends JPanel {
         }
         
         // 0: 나 (하단), 1: 상단, 2: 좌측, 3: 우측
-        // 배치 순서: 두 번째 플레이어 -> 상단(1), 세 번째 플레이어 -> 좌측(2), 네 번째 플레이어 -> 우측(3)
-        int[] positionMapping = {0, 1, 2, 3}; // 0=나(하단), 1=상단, 2=좌측, 3=우측
+        int[] positionMapping = {0, 1, 2, 3};
         int playerOrder = 0; // 플레이어 순서 카운터 (나를 제외한 순서)
 
-        // 🎯 [추가] 시작 버튼 활성화 판단을 위한 변수
         boolean amIHost = false;
         int totalPlayers = 0;
         int readyPlayers = 0;
         
-        // 2. 유저 정보 설정 및 상태 카운트
+        // 유저 정보 설정 및 상태 카운트
         for (String info : userInfos) {
             if (info == null || info.isEmpty()) continue; 
             
@@ -369,23 +343,21 @@ public class Waiting extends JPanel {
             String isReady = parts[1];
             String isHost = parts[2];
             
-            // 🎯 카운트 로직 추가
             totalPlayers++; // 방에 있는 모든 유저 카운트
             if (isReady.equals("ON") || isHost.equals("HOST")) {
-                 // 방장은 항상 준비 상태로 간주
                 readyPlayers++;
             }
             if (nickname.equals(myNickname) && isHost.equals("HOST")) {
                 amIHost = true;
             }
             
-            int labelIndex; // 실제로 닉네임을 설정할 JLabel의 인덱스
+            int labelIndex; // 실제로 닉네임을 설정할 JLabel 인덱스
             
             if (nickname.equals(myNickname)) {
-                // 3. 나 자신은 무조건 player1(0번 인덱스, 하단)에 배치
+                // 본인은 무조건 하단에 배치
                 labelIndex = 0;
             } else {
-                // 4. 나머지 유저들은 순서대로 배치: 두 번째 -> 상단(1), 세 번째 -> 좌측(2), 네 번째 -> 우측(3)
+                // 나머지 유저들은 순서대로 배치)
                 playerOrder++;
                 if (playerOrder <= 3) {
                     labelIndex = positionMapping[playerOrder];
@@ -393,11 +365,9 @@ public class Waiting extends JPanel {
                     continue; 
                 }
             }
-
-            // 5. 라벨 업데이트
-            JLabel targetLabel = playerLabels[labelIndex];
             
-            // 방장은 "준비" 대신 "(방장)"을 표시하는 것이 자연스러움
+            JLabel targetLabel = playerLabels[labelIndex];
+
             String status;
             if (isHost.equals("HOST")) {
                  status = " (방장)";
@@ -407,7 +377,6 @@ public class Waiting extends JPanel {
 
             targetLabel.setText(nickname + status);
             
-            // 배경색 업데이트
             if (isReady.equals("ON") || isHost.equals("HOST")) {
                 targetLabel.setBackground(new Color(150, 100, 50, 240)); // 준비 완료 - 어두운 오렌지
                 targetLabel.setForeground(new Color(220, 220, 220));
@@ -417,37 +386,46 @@ public class Waiting extends JPanel {
             }
         }
         
-        // ✅ 버튼 표시 및 활성화 로직
-        
-        // 1. 방장/준비 버튼 가시성 설정
+        // 방장/준비 버튼 가시성 설정
         if (amIHost) {
             b_start.setVisible(true);
             b_ready.setVisible(false);
             
-            // 2. 시작 버튼 활성화 조건 확인
-            // 조건: 최소 2명 이상 AND (총 유저 수 == 준비된 유저 수)
+            // 시작 버튼 활성화 조건 확인
             boolean allReady = (totalPlayers >= 2 && totalPlayers == readyPlayers);
             
-            // 3. 버튼 활성화/비활성화
+            // 버튼 활성화/비활성화
             b_start.setEnabled(allReady);
             
         } else {
             b_start.setVisible(false);
             b_ready.setVisible(true);
-            b_ready.setEnabled(true); // 일반 유저는 항상 준비 가능
+            b_ready.setEnabled(true);
         }
     }
     
-    // 패널이 화면에서 사라지거나(로비 이동 등) 연결이 끊길 때 호출됨
+    // **외부 참조** WindowAdapter
     @Override
-    public void removeNotify() {
+    public void addNotify() {
+        super.addNotify();
+        
+        // 현재 이 패널을 담고 있는 부모 윈도우(JFrame)를 가져옴
         Window window = SwingUtilities.getWindowAncestor(this);
         
-        if (window != null && exitListener != null) {
-            window.removeWindowListener(exitListener);
+        if (window != null) {
+            // 리스너가 중복 생성되지 않도록 초기화
+            if (exitListener == null) {
+                exitListener = new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        // X 버튼을 눌렀을 때
+                        gameClient.send(new Message(Message.REQ_EXIT_ROOM));
+                    }
+                };
+            }
+            // 윈도우에 리스너 부착
+            window.addWindowListener(exitListener);
         }
-        
-        super.removeNotify();
     }
     
     @Override

@@ -1,7 +1,6 @@
 package client;
 
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -25,16 +24,14 @@ public class Lobby extends JPanel {
     private JScrollPane scrollPane;
     private DefaultTableModel model;
     
-    // 생성자에서 LoginPanel 대신 ActionLi	tener(버튼 동작)를 받습니다.
     public Lobby(ActionListener createAction, ActionListener enterAction) {
         
         try {
-            backgroundImage = ImageIO.read(new File("./imgs/main_img.jpg"));
+            backgroundImage = ImageIO.read(new File("./imgs/main_img.jpg")); // 출처: Canva AI 이미지 생성
         } catch (IOException e) {
             System.out.println("이미지 로드 실패: ./imgs/main_img.jpg");
         }
 
-        // 절대 레이아웃
         setLayout(null); 
         
         buildGUI(createAction, enterAction);
@@ -46,10 +43,11 @@ public class Lobby extends JPanel {
         setLabel();
     }
     
-    /** 방 목록 테이블 */
+    // 방 목록 테이블
    private void setList() {
     	// 빈 데이터로 시작
     	String[] headers = {"방 번호", "방 제목", "인원", "상태"};
+    	// **외부 참조** DefaultTableModel
         model = new DefaultTableModel(null, headers) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -66,7 +64,8 @@ public class Lobby extends JPanel {
         table.setForeground(new Color(200, 200, 200));
         table.setGridColor(new Color(100, 100, 120, 150));
         
-        // 가운데 정렬용 렌더러 생성
+        // **외부 참조** DefaultTableCellRenderer
+        // 가운데 정렬용
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
             public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -91,18 +90,18 @@ public class Lobby extends JPanel {
         
         table.getTableHeader().setReorderingAllowed(false);
         table.getTableHeader().setResizingAllowed(false);
-        table.getTableHeader().setFont(new Font("Malgun Gothic", Font.BOLD, 15)); // 헤더 폰트
+        table.getTableHeader().setFont(new Font("Malgun Gothic", Font.BOLD, 15));
         table.getTableHeader().setBackground(new Color(50, 60, 80));
         table.getTableHeader().setForeground(new Color(220, 220, 220));
-        table.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
+        table.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40)); // 크기 설정
 
         scrollPane = new JScrollPane(table);
+        // **외부 참조** BorderFactory
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
-        // 테이블 위치 반드시 지정해야 보임
         scrollPane.setBounds(250, 250, 500, 300);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
@@ -110,7 +109,7 @@ public class Lobby extends JPanel {
         add(scrollPane);
     }
 
-    /** 버튼 영역 */
+    // 버튼 영역
     private void setButton(ActionListener createAction, ActionListener enterAction) {
         create = new JButton("방 만들기");
         create.setBounds(325, 600, 150, 55);
@@ -118,13 +117,14 @@ public class Lobby extends JPanel {
         create.setForeground(new Color(220, 220, 220));
         create.setBackground(new Color(50, 70, 100));
         create.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         create.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
-        create.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         create.addActionListener(createAction);
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         create.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -141,13 +141,14 @@ public class Lobby extends JPanel {
         enter.setForeground(new Color(220, 220, 220));
         enter.setBackground(new Color(40, 100, 70)); // 어두운 그린
         enter.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         enter.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 130, 90), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
-        enter.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         enter.addActionListener(enterAction);
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         enter.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -177,17 +178,17 @@ public class Lobby extends JPanel {
         add(myInfo);
     }
 
-    // 로그인 성공 후 닉네임을 갱신하는 메소드 -> 미리 패널 부착해서 변경함
+    // 로그인 성공 후 닉네임을 갱신
     public void updateGreeting(String nickname) {
         myInfo.setText("안녕하세요, " + nickname + "님");
     }
 
     // 서버로부터 받은 새로운 방 목록으로 테이블을 갱신
     public void updateRoomList(Vector<Vector<String>> roomData) {
-        // 1. 기존 테이블 데이터 싹 지우기
+        // 기존 테이블 데이터 지움
         model.setRowCount(0); 
 
-        // 2. 새로운 데이터 채워넣기
+        // 새로운 데이터 채워넣음
         if (roomData != null) {
             for (Vector<String> row : roomData) {
                 model.addRow(row);
@@ -198,7 +199,7 @@ public class Lobby extends JPanel {
     // 선택된 방의 번호(ID)를 반환하는 메소드
     public String getSelectedRoomId() {
         int row = table.getSelectedRow();
-        if (row == -1) return null; // 선택된 행이 없음
+        if (row == -1) return null;
         return (String) table.getValueAt(row, 0); // 0번 컬럼(방 번호) 반환
     }
     

@@ -12,12 +12,12 @@ import javax.swing.*;
 import protocol.Message;
 import protocol.Tile; 
 
-public class InGameUI extends JPanel { 
+public class InGame extends JPanel { 
     private Image backgroundImage; 
     private GameClient gameClient; 
     
-    // --- UI 컴포넌트 ---
-    private JLabel[] playerLabels; // 0:나, 1:좌, 2:상, 3:우
+    // UI 컴포넌트
+    private JLabel[] playerLabels;
     private JTextArea chatArea; 
     private JTextField t_chatInput; 
     
@@ -26,28 +26,28 @@ public class InGameUI extends JPanel {
     private JLabel lblTurnInfo;
     private JButton b_getBlack, b_getWhite;
     private JButton b_endTurn;
+    private JButton b_guess;
     
-    // ★ [변경] 텍스트 필드 -> 콤보박스 교체
+    // 콤보박스
     private JComboBox<String> cb_guessTarget; // 대상 ID 선택
     private JComboBox<String> cb_guessIndex;  // 인덱스 선택
     private JComboBox<String> cb_guessValue;  // 숫자(0~11, JOKER) 선택
     
-    private JButton b_guess;
-    
+    // 타이머
     private JLabel lblTimer;
     private Timer turnTimer;
     private int remainingTime = 300;
 
-    // --- 게임 데이터 ---
+    // 게임 데이터
     private String myNickname;
     private Vector<Tile> myTiles = new Vector<>();
     private Map<String, Vector<Tile>> opponentHands = new HashMap<>();
     private Map<String, Integer> userPositionMap = new HashMap<>();
 
-    public InGameUI(GameClient gameClient) { 
+    public InGame(GameClient gameClient) { 
         this.gameClient = gameClient; 
         try { 
-            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg"));
+            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg")); // 출처: Canva AI 이미지 생성
         } catch (IOException e) { 
             System.out.println("이미지 로드 실패: ./imgs/game_img.jpg"); 
         } 
@@ -56,11 +56,14 @@ public class InGameUI extends JPanel {
     } 
 
     private void buildGUI() { 
-        // 1. 플레이어 라벨
-        // 위치: 0=하단(나), 1=상단, 2=좌측, 3=우측
-        // 좌측: 가장 왼쪽(0)과 타이머 왼쪽(400) 사이 가운데 = 200, 라벨 너비 200이므로 x = 100
-        // 우측: 타이머 오른쪽(600)과 가장 오른쪽(1000) 사이 가운데 = 800, 라벨 너비 200이므로 x = 700
-        playerLabels = new JLabel[4];
+    	setPlayer(); // 플레이어 라벨
+    	setChat(); // 채팅창
+    	buildActionPanel(); // 액션 패널 (우측 하단)
+    	setTimer(); // 타이머 설정
+    }
+    
+    private void setPlayer() {
+    	playerLabels = new JLabel[4];
         int[][] pos = { {400, 550}, {400, 30}, {100, 250}, {700, 250} }; 
         
         for(int i=0; i<4; i++) {
@@ -70,6 +73,7 @@ public class InGameUI extends JPanel {
             playerLabels[i].setOpaque(true);
             playerLabels[i].setBackground(new Color(50, 50, 60, 240));
             playerLabels[i].setForeground(new Color(220, 220, 220));
+            // **외부 참조** BorderFactory
             playerLabels[i].setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
                 BorderFactory.createEmptyBorder(8, 10, 8, 10)
@@ -77,18 +81,21 @@ public class InGameUI extends JPanel {
             playerLabels[i].setVisible(false); 
             add(playerLabels[i]);
         }
-        playerLabels[0].setText("나 (Player1)"); 
-
-        // 2. 채팅창
+        playerLabels[0].setText("나 (Player1)");
+    }
+    
+    private void setChat() {
         chatArea = new JTextArea();
         chatArea.setEditable(false);
         chatArea.setBackground(new Color(40, 40, 50, 240));
         chatArea.setForeground(new Color(200, 200, 200));
         chatArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
+        // **외부 참조** BorderFactory
         chatArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         JScrollPane scroll = new JScrollPane(chatArea);
         scroll.setBounds(20, 580, 300, 120);
+        // **외부 참조** BorderFactory
         scroll.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
@@ -102,6 +109,7 @@ public class InGameUI extends JPanel {
         t_chatInput.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
         t_chatInput.setBackground(new Color(40, 40, 50, 240));
         t_chatInput.setForeground(new Color(200, 200, 200));
+        // **외부 참조** BorderFactory
         t_chatInput.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -115,13 +123,14 @@ public class InGameUI extends JPanel {
         b_send.setForeground(new Color(220, 220, 220));
         b_send.setBackground(new Color(50, 70, 100));
         b_send.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_send.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
-        b_send.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b_send.addActionListener(e -> sendMessage());
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_send.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -133,46 +142,14 @@ public class InGameUI extends JPanel {
         });
         
         add(b_send);
-
-        // 3. 액션 패널 (우측 하단)
-        buildActionPanel();
-
-        // 4. 타이머
-        lblTimer = new JLabel("대기 중...", JLabel.CENTER);
-        lblTimer.setBounds(400, 300, 200, 40);
-        lblTimer.setFont(new Font("Malgun Gothic", Font.BOLD, 22));
-        lblTimer.setForeground(new Color(255, 200, 100));
-        lblTimer.setOpaque(true);
-        lblTimer.setBackground(new Color(30, 30, 40, 220));
-        lblTimer.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(150, 120, 80), 2, true),
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
-        add(lblTimer);
-        
-        turnTimer = new Timer(1000, e -> {
-            if(remainingTime > 0) {
-                remainingTime--;
-                lblTimer.setText(remainingTime + "sec Remain!");
-            } else {
-                lblTimer.setText("It's Over");
-                ((Timer)e.getSource()).stop();
-                sendTurnTimeout();
-            }
-        });
-    }
-    
-    private void sendTurnTimeout() {
-        gameClient.send(new Message(Message.TURN_TIMEOUT, myNickname));
     }
 
     private void buildActionPanel() {
         actionPanel = new JPanel();
         actionPanel.setLayout(null);
-        // 왼쪽 여백 10px만큼 오른쪽에도 여백 추가, 패널 너비 360 -> 380으로 증가
-        // 프로그램 너비 1000, 패널 너비 380이므로 오른쪽 가장자리: 1000 - 380 = 620
         actionPanel.setBounds(620, 600, 380, 180);
         actionPanel.setBackground(new Color(30, 30, 40, 220));
+        // **외부 참조** BorderFactory
         actionPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 10, 10, 20) // 오른쪽 여백 10 -> 20으로 증가
@@ -191,14 +168,15 @@ public class InGameUI extends JPanel {
         b_getBlack.setBackground(new Color(30, 30, 30));
         b_getBlack.setForeground(Color.WHITE);
         b_getBlack.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_getBlack.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(50, 50, 60), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
         b_getBlack.setBounds(10, 35, 85, 35);
-        b_getBlack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b_getBlack.addActionListener(e -> requestDraw("BLACK"));
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_getBlack.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -216,14 +194,15 @@ public class InGameUI extends JPanel {
         b_getWhite.setBackground(new Color(120, 120, 130));
         b_getWhite.setForeground(new Color(220, 220, 220));
         b_getWhite.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_getWhite.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(150, 150, 160), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
         b_getWhite.setBounds(105, 35, 85, 35);
-        b_getWhite.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b_getWhite.addActionListener(e -> requestDraw("WHITE"));
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_getWhite.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -242,15 +221,16 @@ public class InGameUI extends JPanel {
         b_endTurn.setBackground(new Color(150, 40, 50));
         b_endTurn.setForeground(new Color(220, 220, 220));
         b_endTurn.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_endTurn.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(180, 60, 70), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
         b_endTurn.setBounds(250, 35, 100, 35); // 버튼 크기와 위치는 그대로
         b_endTurn.setEnabled(false);
-        b_endTurn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b_endTurn.addActionListener(e -> requestEndTurn());
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_endTurn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -266,15 +246,14 @@ public class InGameUI extends JPanel {
         });
         
         actionPanel.add(b_endTurn);
-
-        // --- 추측 하기 UI (좌표 재조정으로 공간 확보) ---
         
-        // 1. 대상 선택 (ID)
-        JLabel l2 = new JLabel("ID:");
-        l2.setForeground(new Color(220, 220, 220));
-        l2.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
-        l2.setBounds(10, 85, 25, 20);
-        actionPanel.add(l2);
+        // 추측하기 UI
+        // ID 선택
+        JLabel id = new JLabel("ID:");
+        id.setForeground(new Color(220, 220, 220));
+        id.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
+        id.setBounds(10, 85, 25, 20);
+        actionPanel.add(id);
         
         cb_guessTarget = new JComboBox<>();
         cb_guessTarget.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
@@ -284,12 +263,12 @@ public class InGameUI extends JPanel {
         cb_guessTarget.addActionListener(e -> updateIndexComboBox());
         actionPanel.add(cb_guessTarget);
         
-        // 2. 인덱스 선택 (Idx)
-        JLabel l3 = new JLabel("Idx:");
-        l3.setForeground(new Color(220, 220, 220));
-        l3.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
-        l3.setBounds(120, 85, 30, 20); 
-        actionPanel.add(l3);
+        // 인덱스 선택
+        JLabel idx = new JLabel("Idx:");
+        idx.setForeground(new Color(220, 220, 220));
+        idx.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
+        idx.setBounds(120, 85, 30, 20); 
+        actionPanel.add(idx);
 
         cb_guessIndex = new JComboBox<>();
         cb_guessIndex.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
@@ -298,12 +277,12 @@ public class InGameUI extends JPanel {
         cb_guessIndex.setBounds(150, 82, 45, 25); 
         actionPanel.add(cb_guessIndex);
 
-        // 3. 숫자 선택 (Num)
-        JLabel l4 = new JLabel("Num:");
-        l4.setForeground(new Color(220, 220, 220));
-        l4.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
-        l4.setBounds(200, 85, 35, 20); 
-        actionPanel.add(l4);
+        // 숫자 선택
+        JLabel num = new JLabel("Num:");
+        num.setForeground(new Color(220, 220, 220));
+        num.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
+        num.setBounds(200, 85, 35, 20); 
+        actionPanel.add(num);
         
         String[] values = {"0","1","2","3","4","5","6","7","8","9","10","11","JOKER"};
         cb_guessValue = new JComboBox<>(values);
@@ -313,19 +292,20 @@ public class InGameUI extends JPanel {
         cb_guessValue.setBounds(235, 82, 60, 25); 
         actionPanel.add(cb_guessValue);
 
-        // 4. 추측 버튼 (문제 해결 부분)
+        // 추측 버튼
         b_guess = new JButton("추측");
-        b_guess.setBounds(290, 80, 60, 28); // 버튼 크기와 위치는 그대로
+        b_guess.setBounds(290, 80, 60, 28);
         b_guess.setFont(new Font("Malgun Gothic", Font.BOLD, 13));
         b_guess.setForeground(new Color(220, 220, 220));
         b_guess.setBackground(new Color(40, 100, 70));
         b_guess.setFocusPainted(false);
+        // **외부 참조** BorderFactory
         b_guess.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 130, 90), 2, true),
             BorderFactory.createEmptyBorder(3, 8, 3, 8)
         ));
-        b_guess.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
+        // **외부 참조** MouseAdapter
         // 호버 효과
         b_guess.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -347,7 +327,37 @@ public class InGameUI extends JPanel {
         setButtonsEnabled(false, false, false);
     }
     
-    // ★ [추가] 대상 유저의 타일 개수에 맞춰 인덱스 콤보박스를 갱신하는 메서드
+    private void setTimer() {
+        lblTimer = new JLabel("대기 중...", JLabel.CENTER);
+        lblTimer.setBounds(400, 300, 200, 40);
+        lblTimer.setFont(new Font("Malgun Gothic", Font.BOLD, 22));
+        lblTimer.setForeground(new Color(255, 200, 100));
+        lblTimer.setOpaque(true);
+        lblTimer.setBackground(new Color(30, 30, 40, 220));
+        // **외부 참조** BorderFactory
+        lblTimer.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(150, 120, 80), 2, true),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        add(lblTimer);
+        
+        turnTimer = new Timer(1000, e -> {
+            if(remainingTime > 0) {
+                remainingTime--;
+                lblTimer.setText(remainingTime + "sec Remain!");
+            } else {
+                lblTimer.setText("It's Over");
+                ((Timer)e.getSource()).stop();
+                sendTurnTimeout();
+            }
+        });
+    }
+    
+    private void sendTurnTimeout() {
+        gameClient.send(new Message(Message.TURN_TIMEOUT, myNickname));
+    }
+    
+    // 대상 유저의 타일 개수에 맞춰 인덱스 콤보박스를 갱신하는 메서드
     private void updateIndexComboBox() {
         String target = (String) cb_guessTarget.getSelectedItem();
         if (target == null) return;
@@ -361,7 +371,6 @@ public class InGameUI extends JPanel {
         }
     }
 
-    // --- 통신 요청 메서드 ---
     private void sendMessage() {
         String msg = t_chatInput.getText().trim();
         if(!msg.isEmpty()) {
@@ -370,15 +379,17 @@ public class InGameUI extends JPanel {
         }
     }
 
+    // 타일 뽑기 요청
     private void requestDraw(String color) {
         gameClient.send(new Message(Message.REQ_DRAW, color + ":-1"));
     }
     
+    // 턴 종료 요청
     private void requestEndTurn() {
         gameClient.send(new Message(Message.REQ_END_TURN, myNickname));
     }
 
-    // ★ [수정] 콤보박스 값 읽어서 추측 요청
+    // 콤보박스 값 읽어서 추측 요청
     private void requestGuess() {
         String target = (String) cb_guessTarget.getSelectedItem();
         String idxStr = (String) cb_guessIndex.getSelectedItem();
@@ -397,18 +408,16 @@ public class InGameUI extends JPanel {
         gameClient.send(new Message(Message.REQ_GUESS, target + ":" + idxStr + ":" + val));
     }
 
-    // --- 게임 로직 및 UI 업데이트 ---
-
+    // 게임 로직
     public void startGame(Vector<Tile> myHand, Vector<String> players, Map<String, Vector<String>> otherColors, String myNick) {
         this.myTiles = new Vector<>(myHand);
         this.myNickname = myNick;
         this.opponentHands.clear();
         this.userPositionMap.clear();
 
-        // 1. 타일 및 위치 데이터 초기화
-        // 배치 순서: 두 번째 플레이어 -> 상단(1), 세 번째 플레이어 -> 좌측(2), 네 번째 플레이어 -> 우측(3)
-        int[] positionMapping = {0, 1, 2, 3}; // 0=나(하단), 1=상단, 2=좌측, 3=우측
-        int playerOrder = 0; // 플레이어 순서 카운터 (나를 제외한 순서)
+        // 타일 및 위치 데이터 초기화
+        int[] positionMapping = {0, 1, 2, 3};
+        int playerOrder = 0;
         
         for(String pName : players) {
             if(pName.equals(myNickname)) {
@@ -418,7 +427,6 @@ public class InGameUI extends JPanel {
             } else {
                 playerOrder++;
                 if(playerOrder <= 3) {
-                    // 두 번째 플레이어(1) -> 상단(1), 세 번째 플레이어(2) -> 좌측(2), 네 번째 플레이어(3) -> 우측(3)
                     int positionIndex = positionMapping[playerOrder];
                     userPositionMap.put(pName, positionIndex);
                     playerLabels[positionIndex].setText(pName);
@@ -436,19 +444,19 @@ public class InGameUI extends JPanel {
             }
         }
         
-        // ★ [추가] 게임 시작 시 추측 대상(Target) 콤보박스 세팅 (나는 제외)
+        // 추측 대상 콤보박스 세팅
         cb_guessTarget.removeAllItems();
         for(String pName : players) {
             if(!pName.equals(myNickname)) {
                 cb_guessTarget.addItem(pName);
             }
         }
-        // 첫 번째 유저 선택 시 인덱스 자동 갱신됨 (ActionListener 덕분)
-
+        
         appendChat("=== 게임 시작 ===");
         repaint();
     }
 
+    // 턴 갱신
     public void updateTurn(String currentNick) {
         boolean isMyTurn = currentNick.equals(myNickname);
         
@@ -471,6 +479,7 @@ public class InGameUI extends JPanel {
         turnTimer.restart();
     }
 
+    // 타일 뽑기 결과
     public void handleDrawResult(Tile tile, int index) {
         if (tile.getNumber() == -1) {
             String input = JOptionPane.showInputDialog(this, "조커! 삽입할 인덱스 입력:", "JOKER", JOptionPane.QUESTION_MESSAGE);
@@ -494,11 +503,11 @@ public class InGameUI extends JPanel {
         repaint();
         appendChat("[System] 타일을 가져왔습니다.");
         
-        // ★ 드로우 후: 추측만 가능 (턴 종료 불가 - 룰 적용)
         setButtonsEnabled(false, true, false); 
         lblTurnInfo.setText("타일을 배치했습니다. 반드시 추리를 시도해야 합니다.");
     }
     
+    // 조커를 제외한 정렬 메서드
     private void sortTilesExcludingJokers(Vector<Tile> tiles) {
         Vector<Integer> jokerIndices = new Vector<>();
         Vector<Tile> jokers = new Vector<>();
@@ -517,6 +526,7 @@ public class InGameUI extends JPanel {
         }
     }
     
+    // 상대 타일 뽑기 정렬 (색상만)
     public void handleOpponentDraw(String nickname, String color, int index) {
         if (nickname.equals(myNickname)) return;
 
@@ -529,7 +539,7 @@ public class InGameUI extends JPanel {
         
         hand.add(index, secretTile);
         
-        // ★ [추가] 만약 현재 콤보박스에서 선택된 유저라면, 인덱스 목록 갱신 (개수가 늘었으니까)
+        // 만약 현재 콤보박스에서 선택된 유저라면, 인덱스 목록 갱신
         String selected = (String) cb_guessTarget.getSelectedItem();
         if(selected != null && selected.equals(nickname)) {
             updateIndexComboBox();
@@ -538,6 +548,7 @@ public class InGameUI extends JPanel {
         repaint();
     }
 
+    // 타일 공개
     public void handleReveal(String targetID, int index, Tile tile) {
         if(targetID.equals(myNickname)) {
             // 내 타일 공개 (조커 처리 포함)
@@ -566,11 +577,11 @@ public class InGameUI extends JPanel {
             }
         }
         
-        // ★ 추리 성공 시 '턴 종료' 버튼 활성화 (룰 적용)
+        // 추리 성공 시 '턴 종료' 버튼 활성화
         if (lblTurnInfo.getText().contains("나의 턴") || b_guess.isEnabled()) {
             if (!targetID.equals(myNickname)) {
                 appendChat("[System] 정답! 계속 추리하거나 턴을 종료하세요.");
-                setButtonsEnabled(false, true, true); // (Draw X, Guess O, EndTurn O)
+                setButtonsEnabled(false, true, true);
             }
         }
         repaint();
@@ -615,18 +626,13 @@ public class InGameUI extends JPanel {
         if (tiles == null || tiles.isEmpty()) return;
         
         int w = 40, h = 60, gap = 5;
-        
-        // 타일들의 전체 너비 계산
         int totalWidth = tiles.size() * w + (tiles.size() - 1) * gap;
-        
-        // 가운데 정렬을 위한 시작 X 좌표 계산
         int startX = centerX - totalWidth / 2;
         
         for (int i = 0; i < tiles.size(); i++) {
             Tile t = tiles.get(i);
             int x = startX + i * (w + gap);
             int y = startY;
-
             if (isMe) {
                 if (t != null) drawSingleTile(g, x, y, w, h, t.getColor(), t.getNumber(), t.isRevealed(), i);
             } else {
@@ -678,7 +684,7 @@ public class InGameUI extends JPanel {
         g.drawString("[" + index + "]", x + 10, y + 55);
     }
     
-    // ★ [수정] 버튼 및 콤보박스 활성화/비활성화 제어
+    // 버튼 및 콤보박스 활성화/비활성화 제어
     private void setButtonsEnabled(boolean canDraw, boolean canGuess, boolean canEndTurn) {
         b_getBlack.setEnabled(canDraw);
         b_getWhite.setEnabled(canDraw);

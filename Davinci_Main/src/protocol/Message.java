@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // --- 프로토콜 상수 (대화의 종류) ---
+    // 프로토콜 상수
     public static final int REQ_LOGIN = 1000;    // 클라 -> 서버: "로그인 요청 (닉네임)"
     public static final int LOGIN_SUCCESS = 1001;// 서버 -> 클라: "로그인 성공 (로비로 이동)"
     public static final int LOGIN_FAIL = 1002;   // 서버 -> 클라: "로그인 실패"
@@ -37,13 +37,13 @@ public class Message implements Serializable {
 	public static final int BCAST_DRAW = 4009;	   // 서버 -> 클라(전체): "타일 드로우 및 삽입 알림" (데이터: [ID, Color, Index])
 	public static final int REQ_JOKER_POSITION = 4010; // 클라 -> 서버: "조커 위치 설정" (데이터: "색상:인덱스")
     
-    // --- 데이터 ---
+    // 데이터
 	private int mode;
 	    private Object data1;
 	    private Object data2;
-	    private Object data3; // 추가 데이터
+	    private Object data3;
 	
-	    // --- 생성자 ---
+	    // 생성자
 	    public Message(int mode) {
 	        this(mode, null, null, null);
 	    }
@@ -63,7 +63,7 @@ public class Message implements Serializable {
 	        this.data3 = data3;
 	    }
 	
-	    // --- Getter & Setter ---
+	    // Getter & Setter
 	    public int getMode() { return mode; }
 	    
 	    public Object getData1() { return data1; }
@@ -75,7 +75,7 @@ public class Message implements Serializable {
 	    public Object getData3() { return data3; }
 	    public void setData3(Object data3) { this.data3 = data3; }
 	
-	    // [호환성 유지]
+	    // 호환성 유지
 	    public Object getPayload() { return data2; }
 	    public void setPayload(Object payload) { this.data2 = payload; }
 	}
