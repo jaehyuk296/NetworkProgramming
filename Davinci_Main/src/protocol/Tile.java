@@ -9,7 +9,7 @@ public class Tile implements Serializable, Comparable<Tile> {
 
     private String color; // "BLACK" 또는 "WHITE"
     private int number;   // 0 ~ 11, 조커는 -1
-    private boolean isRevealed; // true면 공개됨(누워있음), false면 비공개(서있음)
+    private boolean isRevealed; // true면 공개됨, false면 비공개
 
     public Tile(String color, int number) {
         this.color = color;
@@ -17,8 +17,7 @@ public class Tile implements Serializable, Comparable<Tile> {
         this.isRevealed = false; // 기본값은 비공개
     }
 
-    // --- Getter & Setter ---
-
+    // Getter & Setter 
     public String getColor() {
         return color;
     }
@@ -35,7 +34,6 @@ public class Tile implements Serializable, Comparable<Tile> {
         this.isRevealed = isRevealed;
     }
 
-    // --- 유틸리티 메서드 ---
     // 이 타일이 조커인지 확인
     public boolean isJoker() {
         return this.number == -1;

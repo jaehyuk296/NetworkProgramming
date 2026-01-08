@@ -56,6 +56,7 @@ public class GameServer extends JFrame {
         JPanel topPanel = new JPanel();
         topPanel.add(new JLabel("로그 필터 (모든 탭 적용): "));
         
+        // **외부 참조** JComboBox
         String[] filters = {"ALL (전체)", "SYS (시스템)", "CONN (접속/퇴장)", "CHAT (채팅)", "GAME (게임로직)", "ERR (에러)"};
         filterCombo = new JComboBox<>(filters);
         
@@ -65,6 +66,7 @@ public class GameServer extends JFrame {
         topPanel.add(filterCombo);
         add(topPanel, BorderLayout.NORTH);
 
+        // **외부 참조** JTabbedPane
         // [중앙] 탭 패널
         tabbedPane = new JTabbedPane();
 
