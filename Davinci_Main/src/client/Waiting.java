@@ -43,7 +43,7 @@ public class Waiting extends JPanel {
         this.gameClient = gameClient;
         
         try {
-            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg")); // 출처: Canva AI 이미지 생성
+            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg"));
         } catch (IOException e) {
             System.out.println("이미지 로드 실패: ./imgs/game_img.jpg");
         }
@@ -69,7 +69,6 @@ public class Waiting extends JPanel {
         player1.setOpaque(true); 
         player1.setBackground(new Color(50, 50, 60, 240));
         player1.setForeground(new Color(220, 220, 220));
-        // **외부 참조** BorderFactory
         player1.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -83,7 +82,6 @@ public class Waiting extends JPanel {
         player2.setOpaque(true);
         player2.setBackground(new Color(50, 50, 60, 240));
         player2.setForeground(new Color(220, 220, 220));
-        // **외부 참조** BorderFactory
         player2.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -97,7 +95,6 @@ public class Waiting extends JPanel {
         player3.setOpaque(true);
         player3.setBackground(new Color(50, 50, 60, 240));
         player3.setForeground(new Color(220, 220, 220));
-        // **외부 참조** BorderFactory
         player3.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -111,7 +108,6 @@ public class Waiting extends JPanel {
         player4.setOpaque(true);
         player4.setBackground(new Color(50, 50, 60, 240));
         player4.setForeground(new Color(220, 220, 220));
-        // **외부 참조** BorderFactory
         player4.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 15, 10, 15)
@@ -131,7 +127,6 @@ public class Waiting extends JPanel {
         b_start.setForeground(new Color(220, 220, 220));
         b_start.setBackground(new Color(40, 100, 70));
         b_start.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_start.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 130, 90), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
@@ -143,7 +138,6 @@ public class Waiting extends JPanel {
             }
         });
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_start.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -163,7 +157,6 @@ public class Waiting extends JPanel {
         b_ready.setForeground(new Color(220, 220, 220));
         b_ready.setBackground(new Color(50, 70, 100));
         b_ready.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_ready.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
@@ -175,7 +168,6 @@ public class Waiting extends JPanel {
             }
         });
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_ready.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -195,7 +187,6 @@ public class Waiting extends JPanel {
         b_exit.setForeground(new Color(220, 220, 220));
         b_exit.setBackground(new Color(150, 40, 50));
         b_exit.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_exit.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(180, 60, 70), 2, true),
             BorderFactory.createEmptyBorder(8, 15, 8, 15)
@@ -205,7 +196,6 @@ public class Waiting extends JPanel {
             gameClient.showLobby();
         });
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_exit.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -225,13 +215,11 @@ public class Waiting extends JPanel {
         chatArea.setBackground(new Color(40, 40, 50, 240));
         chatArea.setForeground(new Color(200, 200, 200));
         chatArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
-        // **외부 참조** BorderFactory
         chatArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // 채팅창 스크롤바
         JScrollPane scrollPane = new JScrollPane(chatArea);
         scrollPane.setBounds(20, 550, 320, 150);
-        // **외부 참조** BorderFactory
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
@@ -245,7 +233,6 @@ public class Waiting extends JPanel {
         t_input.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
         t_input.setBackground(new Color(40, 40, 50, 240));
         t_input.setForeground(new Color(200, 200, 200));
-        // **외부 참조** BorderFactory
         t_input.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -263,7 +250,6 @@ public class Waiting extends JPanel {
         b_send.setForeground(new Color(220, 220, 220));
         b_send.setBackground(new Color(50, 70, 100));
         b_send.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_send.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -274,7 +260,6 @@ public class Waiting extends JPanel {
             }
         });
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_send.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -404,7 +389,6 @@ public class Waiting extends JPanel {
         }
     }
     
-    // **외부 참조** WindowAdapter
     @Override
     public void addNotify() {
         super.addNotify();

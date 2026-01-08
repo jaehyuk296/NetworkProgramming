@@ -47,7 +47,7 @@ public class InGame extends JPanel {
     public InGame(GameClient gameClient) { 
         this.gameClient = gameClient; 
         try { 
-            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg")); // 출처: Canva AI 이미지 생성
+            backgroundImage = ImageIO.read(new File("./imgs/game_img.jpg"));
         } catch (IOException e) { 
             System.out.println("이미지 로드 실패: ./imgs/game_img.jpg"); 
         } 
@@ -73,7 +73,6 @@ public class InGame extends JPanel {
             playerLabels[i].setOpaque(true);
             playerLabels[i].setBackground(new Color(50, 50, 60, 240));
             playerLabels[i].setForeground(new Color(220, 220, 220));
-            // **외부 참조** BorderFactory
             playerLabels[i].setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
                 BorderFactory.createEmptyBorder(8, 10, 8, 10)
@@ -90,12 +89,10 @@ public class InGame extends JPanel {
         chatArea.setBackground(new Color(40, 40, 50, 240));
         chatArea.setForeground(new Color(200, 200, 200));
         chatArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
-        // **외부 참조** BorderFactory
         chatArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         JScrollPane scroll = new JScrollPane(chatArea);
         scroll.setBounds(20, 580, 300, 120);
-        // **외부 참조** BorderFactory
         scroll.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
@@ -109,7 +106,6 @@ public class InGame extends JPanel {
         t_chatInput.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
         t_chatInput.setBackground(new Color(40, 40, 50, 240));
         t_chatInput.setForeground(new Color(200, 200, 200));
-        // **외부 참조** BorderFactory
         t_chatInput.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -123,14 +119,12 @@ public class InGame extends JPanel {
         b_send.setForeground(new Color(220, 220, 220));
         b_send.setBackground(new Color(50, 70, 100));
         b_send.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_send.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
         b_send.addActionListener(e -> sendMessage());
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_send.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -149,7 +143,6 @@ public class InGame extends JPanel {
         actionPanel.setLayout(null);
         actionPanel.setBounds(620, 600, 380, 180);
         actionPanel.setBackground(new Color(30, 30, 40, 220));
-        // **외부 참조** BorderFactory
         actionPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(10, 10, 10, 20) // 오른쪽 여백 10 -> 20으로 증가
@@ -168,7 +161,6 @@ public class InGame extends JPanel {
         b_getBlack.setBackground(new Color(30, 30, 30));
         b_getBlack.setForeground(Color.WHITE);
         b_getBlack.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_getBlack.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(50, 50, 60), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -176,7 +168,6 @@ public class InGame extends JPanel {
         b_getBlack.setBounds(10, 35, 85, 35);
         b_getBlack.addActionListener(e -> requestDraw("BLACK"));
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_getBlack.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -194,7 +185,6 @@ public class InGame extends JPanel {
         b_getWhite.setBackground(new Color(120, 120, 130));
         b_getWhite.setForeground(new Color(220, 220, 220));
         b_getWhite.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_getWhite.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(150, 150, 160), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -202,7 +192,6 @@ public class InGame extends JPanel {
         b_getWhite.setBounds(105, 35, 85, 35);
         b_getWhite.addActionListener(e -> requestDraw("WHITE"));
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_getWhite.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -221,7 +210,6 @@ public class InGame extends JPanel {
         b_endTurn.setBackground(new Color(150, 40, 50));
         b_endTurn.setForeground(new Color(220, 220, 220));
         b_endTurn.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_endTurn.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(180, 60, 70), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -230,7 +218,6 @@ public class InGame extends JPanel {
         b_endTurn.setEnabled(false);
         b_endTurn.addActionListener(e -> requestEndTurn());
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_endTurn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -299,13 +286,11 @@ public class InGame extends JPanel {
         b_guess.setForeground(new Color(220, 220, 220));
         b_guess.setBackground(new Color(40, 100, 70));
         b_guess.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         b_guess.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 130, 90), 2, true),
             BorderFactory.createEmptyBorder(3, 8, 3, 8)
         ));
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         b_guess.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -334,7 +319,6 @@ public class InGame extends JPanel {
         lblTimer.setForeground(new Color(255, 200, 100));
         lblTimer.setOpaque(true);
         lblTimer.setBackground(new Color(30, 30, 40, 220));
-        // **외부 참조** BorderFactory
         lblTimer.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(150, 120, 80), 2, true),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)

@@ -21,7 +21,7 @@ public class LoginPanel extends JPanel {
 
     public LoginPanel(ActionListener originalConnectAction) {
         try {
-            backgroundImage = ImageIO.read(new File("./imgs/main_img.jpg")); // 출처: Canva AI 이미지 생성
+            backgroundImage = ImageIO.read(new File("./imgs/main_img.jpg"));
         } catch (IOException e) {
             System.out.println("이미지 로드 실패: ./imgs/main.jpg 파일을 확인하세요.");
         }
@@ -37,7 +37,6 @@ public class LoginPanel extends JPanel {
         nicknameField.setBackground(new Color(40, 40, 50, 240)); 
         nicknameField.setForeground(new Color(180, 180, 180)); 
         nicknameField.setCaretColor(new Color(200, 200, 200));
-        // **외부 참조** BorderFactory
         nicknameField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(8, 15, 8, 15)
@@ -45,7 +44,6 @@ public class LoginPanel extends JPanel {
         
         nicknameField.setBounds(350, 220, 300, 45); 
 
-        // **외부 참조** FocusListener
         // 닉네임 포커스 리스너
         nicknameField.addFocusListener(new FocusListener() {
             @Override
@@ -97,14 +95,12 @@ public class LoginPanel extends JPanel {
         enter.setContentAreaFilled(true);
         enter.setBorderPainted(true);
         enter.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         enter.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
         enter.setBounds(400, 300, 200, 50);
         
-        // **외부 참조** MouseAdapter
         // 버튼 호버 효과
         enter.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {

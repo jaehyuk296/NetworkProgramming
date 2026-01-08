@@ -27,7 +27,7 @@ public class Lobby extends JPanel {
     public Lobby(ActionListener createAction, ActionListener enterAction) {
         
         try {
-            backgroundImage = ImageIO.read(new File("./imgs/main_img.jpg")); // 출처: Canva AI 이미지 생성
+            backgroundImage = ImageIO.read(new File("./imgs/main_img.jpg"));
         } catch (IOException e) {
             System.out.println("이미지 로드 실패: ./imgs/main_img.jpg");
         }
@@ -43,11 +43,10 @@ public class Lobby extends JPanel {
         setLabel();
     }
     
-    // 방 목록 테이블
+    /** 방 목록 테이블 */
    private void setList() {
     	// 빈 데이터로 시작
     	String[] headers = {"방 번호", "방 제목", "인원", "상태"};
-    	// **외부 참조** DefaultTableModel
         model = new DefaultTableModel(null, headers) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -64,7 +63,6 @@ public class Lobby extends JPanel {
         table.setForeground(new Color(200, 200, 200));
         table.setGridColor(new Color(100, 100, 120, 150));
         
-        // **외부 참조** DefaultTableCellRenderer
         // 가운데 정렬용
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -96,7 +94,6 @@ public class Lobby extends JPanel {
         table.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40)); // 크기 설정
 
         scrollPane = new JScrollPane(table);
-        // **외부 참조** BorderFactory
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(100, 100, 120), 2, true),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
@@ -109,7 +106,7 @@ public class Lobby extends JPanel {
         add(scrollPane);
     }
 
-    // 버튼 영역
+    /** 버튼 영역 */
     private void setButton(ActionListener createAction, ActionListener enterAction) {
         create = new JButton("방 만들기");
         create.setBounds(325, 600, 150, 55);
@@ -117,14 +114,12 @@ public class Lobby extends JPanel {
         create.setForeground(new Color(220, 220, 220));
         create.setBackground(new Color(50, 70, 100));
         create.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         create.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(80, 100, 130), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
         create.addActionListener(createAction);
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         create.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -141,14 +136,12 @@ public class Lobby extends JPanel {
         enter.setForeground(new Color(220, 220, 220));
         enter.setBackground(new Color(40, 100, 70)); // 어두운 그린
         enter.setFocusPainted(false);
-        // **외부 참조** BorderFactory
         enter.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 130, 90), 2, true),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
         enter.addActionListener(enterAction);
         
-        // **외부 참조** MouseAdapter
         // 호버 효과
         enter.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
