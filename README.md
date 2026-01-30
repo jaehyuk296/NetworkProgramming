@@ -2,6 +2,23 @@
 자바(Java) 소켓 통신을 기반으로 구현한 실시간 멀티플레이어 보드게임 **'다빈치 코드'** 프로젝트입니다.
 중앙 서버를 통해 다수의 클라이언트가 접속하여 대기실(로비)에서 매칭하고, 게임 방에서 실시간으로 추리 대결을 펼칠 수 있습니다.
 
+## 실행 화면
+* 서버 실행 및 로그인 화면
+<img width="1918" height="789" alt="image" src="https://github.com/user-attachments/assets/33374ef4-a02a-49f3-8093-6054f64b0120" />
+
+* 로비 화면
+<img width="1913" height="795" alt="image" src="https://github.com/user-attachments/assets/203690da-14b8-483d-85c3-36a1f81094ed" />
+
+* 게임 대기 화면
+<img width="1911" height="1031" alt="image" src="https://github.com/user-attachments/assets/ea8a39b0-c6a3-44d3-97a2-ae4a5e904c94" />
+
+* 게임 화면
+<img width="1919" height="794" alt="image" src="https://github.com/user-attachments/assets/1e98e34f-a39c-46e6-848e-2516454782af" />
+
+* 게임 종료
+<img width="1919" height="782" alt="image" src="https://github.com/user-attachments/assets/1a876919-6c04-47d5-98c8-fc2ccf2f2001" />
+
+
 ## 🛠️ 개발 환경 (Tech Stack)
 * **Language**: Java (JDK 1.8 이상)
 * **GUI**: Java Swing (AWT)
